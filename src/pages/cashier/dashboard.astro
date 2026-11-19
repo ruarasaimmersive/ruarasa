@@ -1,0 +1,12 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import DashboardComp from '../../components/Dashboard';
+import Navigation from '../../components/Navigation';
+---
+
+<Layout>
+  <Navigation client:only="react" activePage="dashboard" />
+  <main class="md:px-4 md:py-10 pb-32">
+    <DashboardComp client:only="react" />
+  </main>
+</Layout>

@@ -1,0 +1,322 @@
+@import 'tailwindcss';
+
+@theme {
+  --font-sans: 'Plus Jakarta Sans', sans-serif;
+  --color-brand-start: #10b981;
+  --color-brand-end: #059669;
+
+  /* Valentine Theme Colors */
+  --color-valentine-50: #fff0f3;
+  --color-valentine-100: #ffe0eb;
+  --color-valentine-200: #ffc1d7;
+  --color-valentine-300: #ff91b8;
+  --color-valentine-400: #ff5a97;
+  --color-valentine-500: #e75a97;
+  --color-valentine-600: #c9407a;
+  --color-valentine-700: #a82d5e;
+  --color-valentine-800: #8b2850;
+  --color-valentine-900: #742647;
+  --color-valentine-950: #450f24;
+  --color-valentine-bg: #faecdd;
+  --color-valentine-nav: #faecdd;
+}
+
+@layer base {
+  /* Apply cultural pattern globally to body */
+  body {
+    background-color: #09090b;
+    color: #fff; /* Force default text to white since we are going dark */
+    cursor: default; /* Reset cursor for body */
+  }
+
+  /* Global button styles */
+  button,
+  [type='button'],
+  [type='reset'],
+  [type='submit'] {
+    cursor: pointer;
+  }
+
+  body {
+    background-image:
+      radial-gradient(
+        circle at 100% 50%,
+        transparent 20%,
+        #18181b 21%,
+        #18181b 34%,
+        transparent 35%,
+        transparent
+      ),
+      radial-gradient(
+          circle at 0% 50%,
+          transparent 20%,
+          #18181b 21%,
+          #18181b 34%,
+          transparent 35%,
+          transparent
+        )
+        0px 50px,
+      radial-gradient(
+        circle at 0% 50%,
+        transparent 20%,
+        #18181b 21%,
+        #18181b 34%,
+        transparent 35%,
+        transparent
+      ),
+      radial-gradient(
+          circle at 100% 50%,
+          transparent 20%,
+          #18181b 21%,
+          #18181b 34%,
+          transparent 35%,
+          transparent
+        )
+        0px 50px;
+    background-size: 100px 100px;
+  }
+
+  /* Ensure dark mode class doesn't override it with old gradients, but keeps the same pattern */
+  .dark body {
+    background-color: #09090b;
+    background-image:
+      radial-gradient(
+        circle at 100% 50%,
+        transparent 20%,
+        #18181b 21%,
+        #18181b 34%,
+        transparent 35%,
+        transparent
+      ),
+      radial-gradient(
+          circle at 0% 50%,
+          transparent 20%,
+          #18181b 21%,
+          #18181b 34%,
+          transparent 35%,
+          transparent
+        )
+        0px 50px,
+      radial-gradient(
+        circle at 0% 50%,
+        transparent 20%,
+        #18181b 21%,
+        #18181b 34%,
+        transparent 35%,
+        transparent
+      ),
+      radial-gradient(
+          circle at 100% 50%,
+          transparent 20%,
+          #18181b 21%,
+          #18181b 34%,
+          transparent 35%,
+          transparent
+        )
+        0px 50px;
+    background-size: 100px 100px;
+  }
+}
+
+/* Glass Effect Utility */
+.glass {
+  @apply bg-white/70 dark:bg-zinc-900/70 backdrop-blur-xl border border-white/20 dark:border-white/5;
+}
+
+.glass-card {
+  @apply bg-white dark:bg-zinc-900 shadow-xl shadow-zinc-200/50 dark:shadow-black/50 border border-zinc-100 dark:border-zinc-800;
+}
+
+/* Cultural Pattern (Batik-inspired geometric) */
+.pattern-cultural {
+  background-color: #09090b;
+  background-image:
+    radial-gradient(
+      circle at 100% 50%,
+      transparent 20%,
+      #18181b 21%,
+      #18181b 34%,
+      transparent 35%,
+      transparent
+    ),
+    radial-gradient(
+        circle at 0% 50%,
+        transparent 20%,
+        #18181b 21%,
+        #18181b 34%,
+        transparent 35%,
+        transparent
+      )
+      0px 50px,
+    radial-gradient(
+      circle at 0% 50%,
+      transparent 20%,
+      #18181b 21%,
+      #18181b 34%,
+      transparent 35%,
+      transparent
+    ),
+    radial-gradient(
+        circle at 100% 50%,
+        transparent 20%,
+        #18181b 21%,
+        #18181b 34%,
+        transparent 35%,
+        transparent
+      )
+      0px 50px;
+  background-size: 100px 100px;
+}
+
+/* Valentine Heart Divider */
+.valentine-divider {
+  position: relative;
+  border-top: 3px solid #e75a97;
+  margin-top: 8px;
+}
+
+.valentine-divider::before {
+  content: '💕 💕 💕 💕 💕';
+  position: absolute;
+  top: -14px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #faecdd;
+  padding: 0 12px;
+  font-size: 12px;
+  letter-spacing: 4px;
+  white-space: nowrap;
+}
+
+@media (min-width: 768px) {
+  .valentine-divider::before {
+    content: '💕 💕 💕 💕 💕 💕 💕 💕 💕 💕';
+    font-size: 14px;
+    letter-spacing: 8px;
+    padding: 0 16px;
+  }
+}
+
+/* Heart pattern border - repeating */
+.heart-border-top {
+  position: relative;
+  overflow: hidden;
+}
+
+.heart-border-top::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 20px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23e75a97'%3E%3Cpath d='M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z'/%3E%3C/svg%3E");
+  background-repeat: repeat-x;
+  background-size: 20px 20px;
+  background-position: center;
+  opacity: 0.5;
+}
+
+#print-receipt-container {
+  display: none;
+}
+
+/* Print styles for Thermal Receipt */
+@media print {
+  @page {
+    margin: 0;
+  }
+
+  body {
+    background: white !important;
+    background-image: none !important;
+    color: black !important;
+  }
+  
+  /* Hide all direct children of body except the print container */
+  body > *:not(#print-receipt-container) {
+    display: none !important;
+  }
+
+  /* Show only the print receipt container */
+  #print-receipt-container, 
+  #print-receipt-container * {
+    display: block !important;
+  }
+
+  .receipt-page {
+    width: 48mm; /* safe print width for standard 58mm roll */
+    margin: 0 auto;
+    padding: 5px 0;
+    font-family: 'Courier New', Courier, monospace;
+    font-size: 10px; /* standard font size for 58mm thermal printers */
+    line-height: 1.3;
+    color: black;
+    page-break-after: always;
+    break-after: page;
+  }
+
+  .receipt-header {
+    text-align: center;
+    margin-bottom: 12px;
+  }
+
+  .receipt-header h1 {
+    font-size: 16px;
+    font-weight: bold;
+    margin: 0 0 4px 0;
+  }
+
+  .receipt-header p {
+    margin: 2px 0;
+    font-size: 10px;
+  }
+
+  .receipt-divider {
+    border-top: 1px dashed black;
+    margin: 8px 0;
+    height: 0;
+  }
+
+  .receipt-divider.double {
+    border-top: 3px double black;
+  }
+
+  .receipt-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 8px;
+  }
+
+  .receipt-table th {
+    text-align: left;
+    border-bottom: 1px dashed black;
+    padding-bottom: 4px;
+    font-weight: bold;
+    font-size: 11px;
+  }
+
+  .receipt-table td {
+    padding: 4px 0;
+    vertical-align: top;
+  }
+
+  .receipt-row {
+    display: flex;
+    justify-content: space-between;
+    margin: 3px 0;
+  }
+  
+  .receipt-row-bold {
+    display: flex;
+    justify-content: space-between;
+    margin: 4px 0;
+    font-weight: bold;
+  }
+
+  .receipt-footer {
+    text-align: center;
+    margin-top: 15px;
+    font-size: 10px;
+  }
+}

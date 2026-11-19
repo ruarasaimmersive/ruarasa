@@ -1,0 +1,12 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import HistoryComp from '../../components/History';
+import Navigation from '../../components/Navigation';
+---
+
+<Layout>
+  <Navigation client:only="react" activePage="history" />
+  <main class="md:px-4 md:py-10 pb-32">
+    <HistoryComp client:only="react" />
+  </main>
+</Layout>

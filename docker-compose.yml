@@ -1,0 +1,18 @@
+services:
+  rekap:
+    build:
+      context: .
+      args:
+        - PUBLIC_SUPABASE_URL=${PUBLIC_SUPABASE_URL}
+        - PUBLIC_SUPABASE_ANON_KEY=${PUBLIC_SUPABASE_ANON_KEY}
+    container_name: rekap
+    restart: always
+    env_file:
+      - .env
+    networks:
+      - jembatan-npm
+
+networks:
+  jembatan-npm:
+    external: true
+    name: npm-public

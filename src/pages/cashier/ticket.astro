@@ -1,0 +1,12 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import TicketVerification from '../../components/TicketVerification.tsx';
+import Navigation from '../../components/Navigation';
+---
+
+<Layout>
+  <Navigation client:only="react" activePage="ticket" />
+	<main class="md:px-4 md:py-10 pb-32">
+    <TicketVerification client:only="react" />
+	</main>
+</Layout>

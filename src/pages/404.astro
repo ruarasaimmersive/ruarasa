@@ -1,0 +1,35 @@
+---
+export const prerender = true;
+import Layout from '../layouts/Layout.astro';
+---
+
+<Layout title="404: Tidak Ditemukan - RuaRasa">
+  <main class="relative flex flex-col justify-center items-center p-6 min-h-screen text-center overflow-hidden pattern-cultural">
+    <!-- Ambient Background Lighting -->
+    <div class="top-1/2 left-1/2 absolute bg-sky-500/20 blur-[100px] rounded-full w-[400px] md:w-[600px] h-[400px] md:h-[600px] -translate-x-1/2 -translate-y-1/2 pointer-events-none"></div>
+    <div class="top-1/2 left-1/2 absolute mix-blend-screen bg-emerald-500/20 blur-[80px] rounded-full w-[200px] md:w-[300px] h-[200px] md:h-[300px] -translate-x-1/2 -translate-y-1/2 pointer-events-none"></div>
+
+    <div class="relative z-10 border-white/10 shadow-2xl backdrop-blur-xl p-10 md:p-16 border rounded-[3rem] w-full max-w-lg bg-zinc-900/80 animate-in duration-700 fade-in zoom-in-95">
+      <div class="mb-2 font-black text-8xl md:text-9xl text-white tracking-tighter" style="line-height: 1.1;">
+        404
+      </div>
+      <h1 class="mb-4 font-extrabold text-2xl md:text-3xl text-white">
+        Wah, Kesasar! 🛸
+      </h1>
+      <p class="mb-10 font-medium text-sm text-zinc-400 md:text-base leading-relaxed">
+        Jalan yang Anda cari mungkin sedang dalam perbaikan atau diculik alien. Mari kembali ke tempat yang aman.
+      </p>
+
+      <a href="/" class="group relative inline-flex justify-center items-center gap-3 shadow-[0_0_20px_rgba(255,255,255,0.1)] hover:shadow-[0_0_30px_rgba(255,255,255,0.3)] bg-white px-8 py-4 rounded-2xl font-black text-black overflow-hidden hover:scale-105 active:scale-95 transition-all">
+        <span class="right-0 bottom-0 left-0 absolute bg-linear-to-r from-sky-400 to-emerald-400 h-1.5 transform transition-transform duration-300 origin-left scale-x-0 group-hover:scale-x-100"></span>
+        <span class="group-hover:-translate-x-1 text-xl transition-transform">🏠</span>
+        <span class="tracking-widest">Kembali ke Beranda</span>
+      </a>
+    </div>
+
+    <!-- Pemanis Teks -->
+    <div class="bottom-10 absolute font-bold text-xs text-zinc-500 uppercase tracking-widest">
+      RuaRasa &copy; {new Date().getFullYear()}
+    </div>
+  </main>
+</Layout>

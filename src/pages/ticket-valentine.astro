@@ -1,0 +1,620 @@
+---
+import Layout from '../layouts/Layout.astro';
+import { LOCATION, QRIS_IMAGE } from '../constants';
+
+const valentinePackages = [
+  {
+    id: 'simple-sweet',
+    name: 'Paket 1 - Simple & Sweet',
+    price: 129000,
+    priceDisplay: 'Rp 129.000',
+    description: '2 Tiket + Love Card + Crafting + Hot Chocolate',
+    icon: '💕',
+  },
+  {
+    id: 'full-experience',
+    name: 'Paket 2 - Full Experience',
+    price: 249000,
+    priceDisplay: 'Rp 249.000',
+    description: 'Paket 1 + Romantic Dinner + Minuman',
+    popular: true,
+    icon: '🍽️',
+  },
+  {
+    id: 'ultimate-luxury',
+    name: 'Paket 3 - Ultimate Luxury',
+    price: 1290000,
+    priceDisplay: 'Rp 1.290.000',
+    originalPrice: 'Rp 1.700.000',
+    description: 'Paket 1 & 2 + Air Balloon + Fine Dining',
+    ultimate: true,
+    icon: '👑',
+  },
+];
+
+const menuOptions = [
+  'Steak Tuna ala Ruarasa Sauce Sasak',
+  'Nasi Capcay Seafood',
+  'Rice Bowl Ayam Sambal Matah',
+];
+---
+
+<Layout title="Booking Tiket Valentine - Rua Rasa" bodyClass="bg-valentine-bg text-zinc-900 selection:bg-valentine-600 selection:text-white">
+  
+  <div class="min-h-screen font-sans">
+    <!-- Header -->
+    <header class="top-0 z-50 sticky bg-valentine-nav/90 shadow-sm backdrop-blur-xl border-valentine-300 border-b">
+      <div class="flex justify-between items-center mx-auto px-4 py-3 max-w-lg">
+        <a href="/valentine" class="flex items-center gap-2">
+          <img src="/logo.svg" alt="RuaRasa" class="h-7" />
+          <span class="hidden sm:block font-bold text-valentine-600 text-xs">Valentine Edition</span>
+        </a>
+        <a href="/valentine" class="font-semibold text-valentine-600 hover:text-valentine-500 text-xs transition-colors">
+          ← Kembali
+        </a>
+      </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="mx-auto px-4 py-6 max-w-lg">
+      
+      <!-- Title -->
+      <div class="mb-6 text-center">
+        <div class="inline-flex items-center gap-2 bg-valentine-100 mb-2 px-2.5 py-1 border border-valentine-200 rounded-full font-bold text-[10px] text-valentine-600 uppercase">
+          💕 Valentine Special 2026
+        </div>
+        <h1 class="mb-1 font-black text-valentine-700 text-xl md:text-2xl">Booking Tiket Valentine</h1>
+        <p class="font-medium text-zinc-500 text-xs">Isi form di bawah untuk reservasi paket Valentine</p>
+      </div>
+
+      <!-- Booking Form -->
+      <form id="valentine-booking-form" class="space-y-4">
+        
+        <!-- Step 1: Package Selection -->
+        <div class="bg-white shadow-lg p-4 md:p-5 rounded-2xl">
+          <h2 class="flex items-center gap-2 mb-3 font-bold text-zinc-900 text-base">
+            <span class="flex justify-center items-center bg-valentine-500 rounded-full w-6 h-6 font-bold text-white text-xs">1</span>
+            Pilih Tiket
+          </h2>
+          
+          <div class="space-y-3" id="package-list">
+            {valentinePackages.map((pkg) => (
+              <label class="block relative cursor-pointer">
+                {pkg.popular && (
+                  <span class="top-0 right-3 z-10 absolute bg-valentine-500 px-2 py-0.5 rounded-b-md font-bold text-[10px] text-white">BEST VALUE</span>
+                )}
+                {pkg.ultimate && (
+                  <span class="top-0 right-3 z-10 absolute bg-linear-to-r from-valentine-600 to-valentine-500 px-2 py-0.5 rounded-b-md font-bold text-[10px] text-white">ULTIMATE 👑</span>
+                )}
+                <input 
+                  type="radio" 
+                  name="package" 
+                  value={pkg.id}
+                  data-price={pkg.price}
+                  data-name={pkg.name}
+                  class="sr-only peer"
+                  required
+                />
+                <div class="flex justify-between items-center peer-checked:bg-valentine-50 p-3 border-2 border-zinc-200 hover:border-valentine-300 peer-checked:border-valentine-500 rounded-xl transition-all">
+                  <div class="flex flex-1 items-center gap-3">
+                    <div class="flex justify-center items-center bg-valentine-100 rounded-xl w-10 h-10 text-lg shrink-0">
+                      {pkg.icon}
+                    </div>
+                    <div>
+                      <p class="font-bold text-zinc-900 text-sm">{pkg.name}</p>
+                      <p class="text-[10px] text-zinc-500 sm:text-xs">{pkg.description}</p>
+                    </div>
+                  </div>
+                  <div class="ml-2 text-right">
+                    {pkg.originalPrice && (
+                      <p class="mb-[-2px] font-bold text-[10px] text-red-400 decoration-red-500/50 line-through">{pkg.originalPrice}</p>
+                    )}
+                    <p class="font-black text-valentine-600 text-base">{pkg.priceDisplay}</p>
+                    <p class="text-[10px] text-zinc-400">untuk 2 orang</p>
+                  </div>
+                </div>
+              </label>
+            ))}
+          </div>
+        </div>
+
+        <!-- Step 2: Customer Info -->
+        <div class="bg-white shadow-lg p-4 md:p-5 rounded-2xl">
+          <h2 class="flex items-center gap-2 mb-3 font-bold text-zinc-900 text-base">
+            <span id="step-info-number" class="flex justify-center items-center bg-valentine-500 rounded-full w-6 h-6 font-bold text-white text-xs">2</span>
+            Informasi Pemesan
+          </h2>
+          
+          <div class="space-y-3">
+            <div>
+              <label class="block mb-1 font-semibold text-zinc-700 text-xs">Nama Lengkap</label>
+              <input 
+                type="text" 
+                name="name" 
+                placeholder="Masukkan nama lengkap" 
+                required
+                class="bg-zinc-50 p-2.5 border border-zinc-200 focus:border-valentine-500 rounded-xl focus:ring-2 focus:ring-valentine-500/20 w-full text-sm transition-all"
+              />
+            </div>
+            
+            <div>
+              <label class="block mb-1 font-semibold text-zinc-700 text-xs">Nomor WhatsApp</label>
+              <div class="flex">
+                <span class="inline-flex items-center bg-zinc-100 px-3 border border-zinc-200 border-r-0 rounded-l-xl font-medium text-zinc-500 text-sm">+62</span>
+                <input 
+                  type="tel" 
+                  name="phone" 
+                  placeholder="8xxxxxxxxxx" 
+                  required
+                  pattern="[0-9]{9,13}"
+                  class="flex-1 bg-zinc-50 p-2.5 border border-zinc-200 focus:border-valentine-500 rounded-r-xl focus:ring-2 focus:ring-valentine-500/20 w-full text-sm transition-all"
+                />
+              </div>
+            </div>
+            
+            <!-- Ticket Validity Info -->
+            <div class="bg-valentine-50 p-3 border border-valentine-200 rounded-xl">
+              <p class="flex items-start gap-2 font-medium text-valentine-700 text-xs">
+                <span>📅</span>
+                <span>Tiket ini hanya bisa digunakan <strong>1x</strong> di antara tanggal <strong>11 - 16 Februari 2026</strong></span>
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Step 3: Payment -->
+        <div class="bg-white shadow-lg p-4 md:p-5 rounded-2xl">
+          <h2 class="flex items-center gap-2 mb-3 font-bold text-zinc-900 text-base">
+            <span id="step-payment-number" class="flex justify-center items-center bg-valentine-500 rounded-full w-6 h-6 font-bold text-white text-xs">3</span>
+            Metode Pembayaran
+          </h2>
+          
+          <div class="gap-3 grid grid-cols-2 mb-4">
+            <button 
+              type="button" 
+              id="payment-onsite"
+              class="flex flex-col items-center gap-1 p-3 border-2 border-zinc-200 hover:border-valentine-300 rounded-xl transition-all payment-option"
+              data-method="ONSITE"
+            >
+              <span class="text-xl">🏪</span>
+              <span class="font-semibold text-zinc-700 text-xs">Bayar di Kasir</span>
+            </button>
+            <button 
+              type="button" 
+              id="payment-transfer"
+              class="flex flex-col items-center gap-1 p-3 border-2 border-zinc-200 hover:border-valentine-300 rounded-xl transition-all payment-option"
+              data-method="TRANSFER"
+            >
+              <span class="text-xl">💳</span>
+              <span class="font-semibold text-zinc-700 text-xs">Transfer / QRIS</span>
+            </button>
+          </div>
+          
+          <!-- QRIS Section (hidden by default) -->
+          <div id="qris-section" class="hidden">
+            <div class="bg-zinc-50 p-4 border border-zinc-200 rounded-xl">
+              <div 
+                id="qris-preview"
+                class="shadow-lg mx-auto mb-3 rounded-xl max-w-[160px] overflow-hidden hover:scale-105 transition-transform cursor-zoom-in"
+              >
+                <img src={QRIS_IMAGE} alt="Scan QRIS" class="w-full" />
+              </div>
+              <p class="mb-3 text-zinc-600 text-xs text-center">
+                Scan QRIS di atas, lalu upload bukti pembayaran
+              </p>
+              
+              <div id="upload-area" class="hover:bg-zinc-100 p-4 border-2 border-zinc-300 hover:border-valentine-400 border-dashed rounded-xl text-center transition-colors cursor-pointer">
+                <input 
+                  type="file" 
+                  name="payment_proof" 
+                  id="payment-proof-input"
+                  accept="image/*"
+                  class="hidden"
+                />
+                <div id="upload-placeholder">
+                  <span class="block mb-1 text-xl">📤</span>
+                  <span class="font-bold text-zinc-500 text-xs">Klik untuk Upload Bukti</span>
+                </div>
+                <div id="upload-preview" class="hidden">
+                  <p class="mb-1 font-bold text-valentine-600 text-xs">✅ Bukti Terupload</p>
+                  <img id="preview-image" src="" alt="Bukti" class="mx-auto rounded-lg h-16 object-cover" />
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <input type="hidden" name="payment_method" id="payment-method-input" value="" />
+        </div>
+
+        <!-- Submit -->
+        <button 
+          type="submit" 
+          id="submit-btn"
+          disabled
+          class="bg-zinc-900 hover:bg-valentine-600 disabled:bg-zinc-300 shadow-xl shadow-zinc-200 hover:shadow-valentine-500/20 py-3.5 rounded-xl w-full font-black text-white disabled:text-zinc-500 text-lg active:scale-[0.98] disabled:scale-100 transition-all cursor-pointer disabled:cursor-not-allowed"
+        >
+          Booking Sekarang →
+        </button>
+        
+        <p class="text-zinc-400 text-xs text-center">
+          Dengan melakukan booking, kamu menyetujui syarat dan ketentuan yang berlaku
+        </p>
+        
+      </form>
+
+    </main>
+
+    <!-- QRIS Modal -->
+    <div id="qris-modal" class="hidden z-50 fixed inset-0 justify-center items-center bg-black/80 backdrop-blur-sm p-4">
+      <div class="relative bg-white p-4 rounded-3xl w-full max-w-sm">
+        <button type="button" id="close-qris" class="top-4 right-4 absolute bg-zinc-100 hover:bg-zinc-200 rounded-full w-10 h-10 font-bold text-zinc-500 transition-colors">
+          ✕
+        </button>
+        <h3 class="mb-4 font-bold text-zinc-900 text-lg text-center">
+          Scan QRIS
+        </h3>
+        <img src={QRIS_IMAGE} alt="QRIS" class="rounded-xl w-full" />
+        <p class="mt-3 text-zinc-500 text-xs text-center">
+          Scan QR di atas untuk melakukan pembayaran
+        </p>
+      </div>
+    </div>
+
+    <!-- Confirmation Modal -->
+    <div id="confirm-modal" class="hidden z-50 fixed inset-0 justify-center items-center bg-black/50 p-4">
+      <div class="bg-white shadow-2xl p-6 rounded-2xl w-full max-w-sm">
+        <div class="mb-4 text-center">
+          <div class="flex justify-center items-center bg-valentine-100 mx-auto mb-3 rounded-full w-14 h-14">
+            <span class="text-2xl">📱</span>
+          </div>
+          <h3 class="font-bold text-zinc-900 text-lg">
+            Konfirmasi Nomor WhatsApp
+          </h3>
+          <p class="mt-2 text-zinc-500 text-sm">
+            Informasi tiket akan dikirim ke:
+          </p>
+          <p class="mt-2 font-bold text-valentine-600 text-xl" id="confirm-phone-display">
+            -
+          </p>
+        </div>
+        <p class="mb-5 text-zinc-400 text-xs text-center" id="confirm-modal-message">
+          Pastikan nomor WhatsApp sudah benar sebelum melanjutkan.
+        </p>
+        <div class="gap-3 grid grid-cols-2">
+          <button
+            type="button"
+            id="cancel-confirm"
+            class="bg-zinc-100 hover:bg-zinc-200 px-4 py-3 rounded-xl font-semibold text-zinc-700 text-sm transition-colors"
+          >
+            Ubah Nomor
+          </button>
+          <button
+            type="button"
+            id="process-confirm"
+            class="bg-valentine-600 hover:bg-valentine-500 px-4 py-3 rounded-xl font-semibold text-white text-sm transition-colors"
+          >
+            Ya, Lanjutkan
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Toast -->
+    <div id="toast" class="hidden top-4 left-1/2 z-60 fixed bg-emerald-500 shadow-lg px-5 py-3 rounded-2xl max-w-[90%] transition-all -translate-x-1/2 duration-300 transform">
+      <div class="flex items-center gap-2">
+        <span class="text-lg">✅</span>
+        <span class="font-semibold text-white text-sm" id="toast-message">Booking berhasil!</span>
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="bg-zinc-900 mt-8 py-6 border-valentine-500/50 border-t">
+      <div class="mx-auto px-4 max-w-2xl text-center">
+        <p class="font-medium text-zinc-400 text-sm">💕 2026 Rua Rasa Lombok - Valentine Edition</p>
+      </div>
+    </footer>
+  </div>
+
+</Layout>
+
+<script>
+  import { createOnlineBooking } from '../lib/supabase';
+  import { uploadImageToImageKit } from '../lib/imagekit';
+  import { sendWhatsAppNotification } from '../lib/whatsapp';
+
+  document.addEventListener('DOMContentLoaded', () => {
+    const submitBtn = document.getElementById('submit-btn') as HTMLButtonElement;
+    
+    // Modals
+    const qrisModal = document.getElementById('qris-modal');
+    const closeQrisBtn = document.getElementById('close-qris');
+    const confirmModal = document.getElementById('confirm-modal');
+    const cancelConfirmBtn = document.getElementById('cancel-confirm');
+    const processConfirmBtn = document.getElementById('process-confirm') as HTMLButtonElement;
+    const confirmPhoneDisplay = document.getElementById('confirm-phone-display');
+
+    const packageRadios = document.querySelectorAll('input[name="package"]');
+    
+    // Payment elements
+    const paymentOptions = document.querySelectorAll('.payment-option');
+    const qrisSection = document.getElementById('qris-section');
+    const qrisPreview = document.getElementById('qris-preview');
+    const paymentMethodInput = document.getElementById('payment-method-input') as HTMLInputElement;
+    const uploadArea = document.getElementById('upload-area');
+    const paymentProofInput = document.getElementById('payment-proof-input') as HTMLInputElement;
+    const uploadPlaceholder = document.getElementById('upload-placeholder');
+    const uploadPreview = document.getElementById('upload-preview');
+    const previewImage = document.getElementById('preview-image') as HTMLImageElement;
+
+    // Helper to toggle modal
+    function toggleModal(modal: HTMLElement | null, show: boolean) {
+      if (!modal) return;
+      if (show) {
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+      } else {
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
+      }
+    }
+
+    // QRIS Modal
+    qrisPreview?.addEventListener('click', () => {
+      toggleModal(qrisModal, true);
+    });
+    closeQrisBtn?.addEventListener('click', () => {
+      toggleModal(qrisModal, false);
+    });
+    qrisModal?.addEventListener('click', (e) => {
+      if (e.target === qrisModal) {
+        toggleModal(qrisModal, false);
+      }
+    });
+
+    // Confirmation Modal
+    cancelConfirmBtn?.addEventListener('click', () => {
+      toggleModal(confirmModal, false);
+    });
+    confirmModal?.addEventListener('click', (e) => {
+      if (e.target === confirmModal) {
+        toggleModal(confirmModal, false);
+      }
+    });
+    // processConfirmBtn listener added below
+
+    // Selected package
+    let selectedPackage: { id: string; price: number; name: string } | null = null;
+    let selectedPaymentMethod: string = '';
+    let paymentProofBase64: string | null = null;
+
+    // Handle package selection
+    packageRadios.forEach(radio => {
+      radio.addEventListener('change', (e) => {
+        const target = e.target as HTMLInputElement;
+        selectedPackage = {
+          id: target.value,
+          price: parseInt(target.dataset.price || '0'),
+          name: target.dataset.name || '',
+        };
+        checkSubmitBtn();
+      });
+    });
+
+    // Handle payment method selection
+    paymentOptions.forEach(btn => {
+      btn.addEventListener('click', () => {
+        const method = (btn as HTMLElement).dataset.method || '';
+        selectedPaymentMethod = method;
+        paymentMethodInput.value = method;
+
+        // Update button styles
+        paymentOptions.forEach(b => {
+          b.classList.remove('bg-valentine-50', 'border-valentine-500');
+          b.classList.add('border-zinc-200');
+        });
+        btn.classList.add('bg-valentine-50', 'border-valentine-500');
+        btn.classList.remove('border-zinc-200');
+
+        // Show/hide QRIS section
+        if (method === 'TRANSFER') {
+          qrisSection?.classList.remove('hidden');
+          submitBtn.textContent = 'Kirim Bukti Bayar';
+        } else {
+          qrisSection?.classList.add('hidden');
+          submitBtn.textContent = 'Booking Sekarang →';
+        }
+
+        checkSubmitBtn();
+      });
+    });
+
+    // Handle file upload
+    uploadArea?.addEventListener('click', () => {
+      paymentProofInput?.click();
+    });
+
+    paymentProofInput?.addEventListener('change', () => {
+      const file = paymentProofInput.files?.[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          const result = e.target?.result as string;
+          previewImage.src = result;
+          paymentProofBase64 = result;
+          
+          uploadPlaceholder?.classList.add('hidden');
+          uploadPreview?.classList.remove('hidden');
+          uploadArea?.classList.add('border-valentine-500', 'bg-valentine-50');
+          uploadArea?.classList.remove('border-zinc-300');
+        };
+        reader.readAsDataURL(file);
+      }
+    });
+
+    // Check if submit button should be enabled
+    function checkSubmitBtn() {
+      submitBtn.disabled = !selectedPackage || !selectedPaymentMethod;
+    }
+
+    // Form submission
+    const form = document.getElementById('valentine-booking-form') as HTMLFormElement;
+    form?.addEventListener('submit', (e) => {
+      e.preventDefault();
+
+      if (!selectedPackage) {
+        alert('Silakan pilih paket terlebih dahulu');
+        return;
+      }
+
+      if (!selectedPaymentMethod) {
+        alert('Silakan pilih metode pembayaran');
+        return;
+      }
+
+      if (selectedPaymentMethod === 'TRANSFER' && !paymentProofBase64) {
+        alert('Mohon upload bukti pembayaran terlebih dahulu.');
+        return;
+      }
+
+      // Check phone validity
+      const formData = new FormData(form);
+      const phone = formData.get('phone') as string;
+      if (!phone || phone.length < 9) {
+        alert('Nomor WhatsApp tidak valid');
+        return;
+      }
+
+      // Show confirmation modal
+      if (confirmPhoneDisplay) {
+        confirmPhoneDisplay.textContent = `+62 ${phone}`;
+      }
+
+      // Update message based on payment method
+      const confirmMessage = document.getElementById('confirm-modal-message');
+      if (confirmMessage) {
+        if (selectedPaymentMethod === 'TRANSFER') {
+            const total = new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(selectedPackage!.price);
+            confirmMessage.innerHTML = `Pastikan bukti bayar sesuai nominal <strong class="text-zinc-900">${total}</strong> dan nomor WhatsApp benar.`;
+        } else {
+            confirmMessage.textContent = 'Pastikan nomor WhatsApp sudah benar sebelum melanjutkan.';
+        }
+      }
+
+      toggleModal(confirmModal, true);
+    });
+
+    // Process Final Confirmation
+    processConfirmBtn?.addEventListener('click', async () => {
+      // UI Loading State
+      const originalText = processConfirmBtn.textContent;
+      processConfirmBtn.textContent = 'Memproses...';
+      processConfirmBtn.disabled = true;
+
+      try {
+        const formData = new FormData(form);
+        const name = formData.get('name') as string;
+        const phone = formData.get('phone') as string;
+
+        // Clean phone number (format: 62...)
+        const cleanPhone = phone.replace(/\D/g, '');
+        const fullPhone = cleanPhone.startsWith('0') 
+          ? '62' + cleanPhone.substring(1) 
+          : (cleanPhone.startsWith('62') ? cleanPhone : '62' + cleanPhone);
+
+        // Upload proof if transfer
+        let paymentProofUrl: string | null = null;
+        if (selectedPaymentMethod === 'TRANSFER' && paymentProofBase64) {
+          const fileName = `proof_val_${Date.now()}_${fullPhone}.jpg`;
+          paymentProofUrl = await uploadImageToImageKit(paymentProofBase64, fileName);
+        }
+
+        const status = selectedPaymentMethod === 'TRANSFER' ? 'MENUNGGU_VERIFIKASI' : 'BOOKING';
+
+        // Save to Supabase
+        // Save to Supabase
+        const booking = await createOnlineBooking({
+          customer_name: name,
+          phone: fullPhone,
+          product_name: selectedPackage!.name,
+          qty: 1,
+          unit_price: selectedPackage!.price,
+          total_price: selectedPackage!.price,
+          payment_method: selectedPaymentMethod as 'ONSITE' | 'TRANSFER',
+          payment_proof_url: paymentProofUrl,
+          status: status,
+        });
+
+        // Send WhatsApp Notification
+        await sendWhatsAppNotification({
+          type: selectedPaymentMethod === 'TRANSFER' ? 'PAY_TRANSFER' : 'PAY_ONSITE',
+          customer: {
+            name: name,
+            phone: fullPhone,
+          },
+          booking: {
+            id: booking?.id || '0',
+            items: [{
+              product: selectedPackage!.name,
+              qty: 1,
+              price: selectedPackage!.price
+            }],
+            total: selectedPackage!.price,
+            date: new Date().toISOString(),
+            payment_method: selectedPaymentMethod,
+          },
+        });
+
+        // Show Success Toast
+        const toast = document.getElementById('toast');
+        const toastMessage = document.getElementById('toast-message');
+        
+        if (toast && toastMessage) {
+          toastMessage.textContent = selectedPaymentMethod === 'TRANSFER' 
+            ? 'Bukti transfer diterima! Kami akan verifikasi segera.' 
+            : 'Booking berhasil! Bayar di kasir saat datang ya.';
+             
+          toast.classList.remove('hidden');
+          
+          // Hide after 4s
+          setTimeout(() => {
+            toast.classList.add('hidden');
+          }, 4000);
+        }
+
+        // Reset Form & UI
+        form.reset();
+        selectedPackage = null;
+        selectedPaymentMethod = '';
+        paymentProofBase64 = null;
+        checkSubmitBtn(); 
+        
+        // Reset UI elements
+        paymentOptions.forEach(b => {
+           b.classList.remove('bg-valentine-50', 'border-valentine-500');
+           b.classList.add('border-zinc-200');
+        });
+        qrisSection?.classList.add('hidden');
+        if (uploadPreview) uploadPreview.classList.add('hidden');
+        if (uploadPlaceholder) uploadPlaceholder.classList.remove('hidden');
+        if (uploadArea) {
+          uploadArea.classList.remove('border-valentine-500', 'bg-valentine-50');
+          uploadArea.classList.add('border-zinc-300');
+        }
+        submitBtn.textContent = 'Booking Sekarang →';
+
+        // Close Modal
+        toggleModal(confirmModal, false);
+
+      } catch (error) {
+        console.error('Booking Error:', error);
+        alert('Maaf, terjadi kesalahan saat memproses booking. Silakan coba lagi.');
+      } finally {
+        // Restore confirm button state
+        if (processConfirmBtn) {
+          processConfirmBtn.textContent = originalText;
+          processConfirmBtn.disabled = false;
+        }
+      }
+    });
+  });
+</script>

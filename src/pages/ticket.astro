@@ -1,0 +1,9 @@
+---
+export const prerender = false;
+import Layout from '../layouts/Layout.astro';
+import Booking from '../components/Booking';
+---
+
+<Layout title="Booking Tiket - Rua Rasa" bodyClass="bg-zinc-50 text-zinc-900 selection:bg-zinc-900 selection:text-sky-400">
+  <Booking client:only="react" />
+</Layout>

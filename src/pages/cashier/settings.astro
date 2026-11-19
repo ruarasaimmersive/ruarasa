@@ -1,0 +1,12 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import SettingsComponent from '../../components/Settings';
+import Navigation from '../../components/Navigation';
+---
+
+<Layout>
+  <Navigation client:only="react" activePage="settings" />
+  <main class="md:px-4 md:py-10 pb-32">
+    <SettingsComponent client:only="react" />
+  </main>
+</Layout>

@@ -1,0 +1,50 @@
+name: Deploy rekap-ruarasa to VPS
+
+on:
+  push:
+    branches:
+      - master
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Deploy to VPS via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        env:
+          COMMIT_SHA: ${{ github.sha }}
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          envs: COMMIT_SHA
+          script: |
+            set -e
+
+            echo "🔄 Pulling latest changes for rekap-ruarasa..."
+            # Masuk ke folder source code
+            cd /home/rusa/project/rekap
+            git pull origin master
+
+            echo "📝 Setting BUILD_ID to commit SHA: $COMMIT_SHA"
+            # Update .env.local dengan Commit ID terbaru
+            if [ -f .env.local ]; then
+              sed -i '/^BUILD_ID=/d' .env.local
+            fi
+            echo "BUILD_ID=$COMMIT_SHA" >> .env.local
+
+            # === PERUBAHAN UTAMA DI SINI ===
+            # Menggunakan 'docker compose' (V2).
+            # Flag '--build' memaksa docker membuat ulang image sebelum up.
+            # Flag '-d' menjalankan di background.
+            # 'studio' adalah nama service spesifik yang ingin di-redeloy.
+            docker compose up -d --build rekap
+
+            # Opsional: Hapus image bekas (dangling images) agar disk tidak penuh
+            docker image prune -f
+
+            echo "✅ Deployment for rekap-ruarasa completed successfully."

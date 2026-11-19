@@ -1,0 +1,8 @@
+---
+import Layout from '../layouts/Layout.astro';
+import LoginComp from '../components/Login';
+---
+
+<Layout>
+  <LoginComp client:only="react" />
+</Layout>

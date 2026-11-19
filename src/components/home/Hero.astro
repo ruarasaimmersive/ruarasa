@@ -1,0 +1,61 @@
+---
+// src/components/home/Hero.astro
+import { HERO_IMAGES } from '../../constants';
+---
+<!-- HERO SECTION (Clean Split Layout) -->
+<header class="relative flex flex-col justify-center mx-auto px-6 md:px-8 pt-24 md:pt-32 pb-12 md:pb-20 max-w-7xl min-h-[90vh] md:min-h-screen">
+  
+  <!-- Decorative Blob -->
+  <div class="top-20 right-0 -z-10 absolute bg-sky-200/50 blur-[100px] rounded-full w-[300px] md:w-[500px] h-[300px] md:h-[500px] mix-blend-multiply"></div>
+    <div class="bottom-20 left-0 -z-10 absolute bg-yellow-200/50 blur-[80px] rounded-full w-[200px] md:w-[300px] h-[200px] md:h-[300px] mix-blend-multiply"></div>
+
+  <div class="items-center gap-8 md:gap-12 grid grid-cols-1 md:grid-cols-2">
+    <!-- Text Content -->
+    <div class="z-10 relative md:text-left text-center">
+      <div class="inline-flex items-center gap-2 bg-zinc-100 mb-4 md:mb-6 px-3 md:px-4 py-1.5 md:py-2 border border-zinc-200 rounded-full font-bold text-[10px] text-zinc-800 md:text-xs uppercase tracking-wider">
+        <span class="bg-sky-600 rounded-full w-1.5 md:w-2 h-1.5 md:h-2"></span>
+        New Destination in Lombok
+      </div>
+      
+      <h1 class="mb-6 font-black text-zinc-900 text-4xl sm:text-5xl md:text-7xl lg:text-8xl leading-[1.1] tracking-tight">
+        History <br class="hidden sm:block"/>
+        Meets <br class="hidden sm:block"/>
+        <span class="inline-block relative">
+          <span class="z-10 relative text-gradient">Light Art.</span>
+          <span class="bottom-2 md:bottom-4 left-0 z-0 absolute bg-sky-300/50 w-full h-2 md:h-3 -rotate-2"></span>
+        </span>
+      </h1>
+      
+      <!-- Abstract Image Composition (Mobile Only) -->
+      <div class="md:hidden relative mx-auto mb-6 w-full max-w-sm h-[300px] sm:h-[400px]">
+        <div class="top-0 right-0 z-10 absolute shadow-2xl rounded-3xl ring-1 ring-black/5 w-4/5 h-4/5 overflow-hidden rotate-3 hover:rotate-0 transition-all duration-500">
+              <img src={HERO_IMAGES.main} alt="Immersive Light" class="w-full h-full object-cover">
+        </div>
+        <div class="bottom-0 left-0 z-20 absolute shadow-2xl border-4 border-white rounded-3xl ring-1 ring-black/5 w-3/5 h-3/5 overflow-hidden -rotate-6 hover:rotate-0 transition-all duration-500">
+              <img src={HERO_IMAGES.secondary} alt="Neon Art" class="w-full h-full object-cover">
+        </div>
+      </div>
+      
+      <p class="mx-auto md:mx-0 mb-4 md:mb-6 max-w-lg font-medium text-zinc-600 text-sm md:text-lg leading-relaxed">
+        Jelajahi perjalanan sejarah Sasak dalam balutan teknologi imersif. Pengalaman wisata edukasi yang belum pernah ada sebelumnya di Lombok.
+      </p>
+
+      <div class="flex sm:flex-row flex-col justify-center md:justify-start items-center gap-3 md:gap-4">
+        <a href="/ticket" class="flex justify-center items-center gap-2 md:gap-3 bg-zinc-900 hover:bg-sky-600 shadow-xl shadow-zinc-200 hover:shadow-sky-500/20 px-6 md:px-8 py-3 md:py-4 rounded-xl md:rounded-2xl w-full sm:w-auto font-bold text-white text-base md:text-lg transition-all hover:-translate-y-1">
+          Booking Sekarang
+          <span>→</span>
+        </a>
+      </div>
+    </div>
+    
+    <!-- Abstract Image Composition (Desktop Only) -->
+    <div class="hidden md:block relative h-[500px] lg:h-[600px]">
+      <div class="top-0 right-0 z-10 absolute shadow-2xl rounded-4xl ring-1 ring-black/5 w-4/5 h-4/5 overflow-hidden rotate-3 hover:rotate-0 transition-all duration-500">
+            <img src={HERO_IMAGES.main} alt="Immersive Light" class="w-full h-full object-cover">
+      </div>
+      <div class="bottom-8 left-0 z-20 absolute shadow-2xl border-8 border-white rounded-4xl ring-1 ring-black/5 w-3/5 h-3/5 overflow-hidden -rotate-6 hover:rotate-0 transition-all duration-500">
+            <img src={HERO_IMAGES.secondary} alt="Neon Art" class="w-full h-full object-cover">
+      </div>
+    </div>
+  </div>
+</header>

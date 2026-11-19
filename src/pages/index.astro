@@ -1,0 +1,94 @@
+---
+export const prerender = true;
+import Layout from '../layouts/Layout.astro';
+
+// Import modular Home Components
+import HomeNav from '../components/home/HomeNav.astro';
+import Hero from '../components/home/Hero.astro';
+import TickerBanner from '../components/home/TickerBanner.astro';
+import AboutRuaRasa from '../components/home/AboutRuaRasa.astro';
+import WhyChooseUs from '../components/home/WhyChooseUs.astro';
+import Explore from '../components/home/Explore.astro';
+import LocationInfo from '../components/home/LocationInfo.astro';
+import Pricing from '../components/home/Pricing.astro';
+import LacxPromo from '../components/home/LacxPromo.astro';
+import Faq from '../components/home/Faq.astro';
+import HomeFooter from '../components/home/HomeFooter.astro';
+import PromoPopup from '../components/home/PromoPopup.astro';
+---
+
+<Layout title="Rua Rasa - Lombok Immersive Edupark" bodyClass="bg-zinc-50 text-zinc-900 selection:bg-zinc-900 selection:text-sky-400">
+  <style is:global>
+    /* Subtle Grain for Texture (Paper feel) */
+    .bg-paper {
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.03'/%3E%3C/svg%3E");
+    }
+
+    /* Modern Gradient Text for Light Mode - High Contrast */
+    .text-gradient {
+      background: linear-gradient(135deg, #18181b 0%, #0284c7 100%); /* Zinc-900 to sky-600 */
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    /* Soft Cards */
+    .soft-panel {
+      background: #ffffff;
+      border: 1px solid rgba(0, 0, 0, 0.05);
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.02), 0 2px 4px -1px rgba(0, 0, 0, 0.02);
+      transition: all 0.3s ease;
+    }
+    
+    .soft-panel:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+      border-color: #0284c7; /* sky-600 */
+    }
+    
+    
+    /* Ticker Animation - Seamless Loop */
+    @keyframes ticker {
+      from { transform: translateX(0); }
+      to { transform: translateX(-50%); }
+    }
+    .animate-ticker {
+      display: inline-flex;
+      animation: ticker 30s linear infinite;
+    }
+    .ticker-content {
+      display: flex;
+      padding-right: 2rem;
+    }
+    
+    /* Image Slideshow Animation */
+    @keyframes slideshow {
+      0%, 30% { opacity: 1; }
+      33%, 97% { opacity: 0; }
+      100% { opacity: 1; }
+    }
+    .slideshow-img {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      animation: slideshow 12s infinite;
+    }
+    .slideshow-img:nth-child(1) { animation-delay: 0s; }
+    .slideshow-img:nth-child(2) { animation-delay: 4s; }
+    .slideshow-img:nth-child(3) { animation-delay: 8s; }
+  </style>
+
+  <HomeNav />
+  <Hero />
+  <TickerBanner />
+  <AboutRuaRasa />
+  <WhyChooseUs />
+  <Explore />
+  <LocationInfo />
+  <Pricing />
+  <!-- <LacxPromo /> -->
+  <Faq />
+  <HomeFooter />
+  <PromoPopup />
+</Layout>

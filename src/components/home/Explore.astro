@@ -1,0 +1,95 @@
+---
+// src/components/home/Explore.astro
+import { IMMERSIVE_EDUPARK_IMAGES, ATTRACTION_IMAGES } from '../../constants';
+---
+<!-- BENTO GRID (Compact & Relevant) -->
+<section id="explore" class="mx-auto px-6 py-16 md:py-24 max-w-6xl">
+  <div class="mb-8 md:mb-12 text-center">
+      <div class="inline-flex items-center gap-2 bg-sky-100 mb-3 md:mb-4 px-3 py-1 border border-sky-200 rounded-full font-bold text-[10px] text-sky-800 md:text-xs uppercase tracking-wider">
+        <span class="bg-sky-600 rounded-full w-1.5 md:w-2 h-1.5 md:h-2 animate-pulse"></span>
+        Explore Our World
+      </div>
+      <h2 class="font-black text-zinc-900 text-3xl md:text-4xl lg:text-5xl leading-tight">Wahana Utama</h2>
+  </div>
+
+  <div class="gap-3 md:gap-4 grid grid-cols-2 md:grid-cols-4 md:grid-rows-2 md:h-[480px]">
+      <!-- 1. Immersive Edupark (Full width on mobile, 2x2 on desktop) -->
+      <div class="group relative col-span-2 md:col-span-2 md:row-span-2 shadow-sm hover:shadow-xl rounded-2xl md:rounded-4xl ring-1 ring-zinc-200 h-[180px] md:h-full overflow-hidden transition-all duration-500 cursor-pointer">
+            <!-- Image Slideshow -->
+            <img src={IMMERSIVE_EDUPARK_IMAGES[0]} class="slideshow-img" alt="Immersive Show 1" />
+            <img src={IMMERSIVE_EDUPARK_IMAGES[1]} class="slideshow-img" alt="Immersive Show 2" />
+            <img src={IMMERSIVE_EDUPARK_IMAGES[2]} class="slideshow-img" alt="Immersive Show 3" />
+            <div class="z-10 absolute inset-0 flex flex-col justify-end bg-linear-to-t from-black/80 via-black/20 to-transparent p-4 md:p-6 lg:p-8">
+              <div class="inline-flex bg-white/90 shadow-sm mb-2 md:mb-3 px-3 md:px-4 py-1 md:py-1.5 border border-sky-200 rounded-full w-fit font-bold text-[10px] text-sky-600 md:text-xs uppercase">Signature</div>
+              <h3 class="font-black text-white text-base md:text-2xl lg:text-3xl leading-tight">Immersive Edupark</h3>
+              <p class="hidden md:block mt-2 font-medium text-zinc-300 text-sm md:text-base line-clamp-2">
+                Jelajahi sejarah Sasak lewat proyeksi multi-sisi dengan efek cermin yang memukau.
+              </p>
+            </div>
+      </div>
+
+      <!-- 2. Kid Zone (1x1) -->
+      <div class="group relative bg-violet-200 rounded-2xl md:rounded-4xl ring-1 ring-zinc-200 h-[140px] md:h-auto overflow-hidden cursor-pointer">
+            <img src={ATTRACTION_IMAGES.kidZone} class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" alt="Kid Zone" />
+            <div class="top-2 md:top-4 right-2 md:right-4 z-10 absolute bg-white/90 shadow-sm px-2 md:px-3 py-0.5 md:py-1 border border-violet-200 rounded-full font-bold text-[8px] text-violet-600 md:text-[10px]">KIDS</div>
+            <div class="absolute inset-0 flex flex-col justify-end bg-linear-to-t from-violet-900/80 to-transparent p-3 md:p-5">
+              <h3 class="font-bold text-white text-sm md:text-lg transition-transform md:group-hover:-translate-y-1 duration-300">Kid Zone</h3>
+              <p class="hidden md:block opacity-0 md:group-hover:opacity-100 mt-1 max-h-0 md:group-hover:max-h-20 overflow-hidden text-violet-200 text-xs leading-relaxed transition-all duration-300">Area bermain anak dengan permainan edukatif yang menyenangkan.</p>
+            </div>
+      </div>
+
+      <!-- 3. Photo Booth (1x1) -->
+      <div class="group relative bg-amber-100 rounded-2xl md:rounded-4xl ring-1 ring-zinc-200 h-[140px] md:h-auto overflow-hidden cursor-pointer">
+            <div class="top-2 md:top-4 right-2 md:right-4 z-10 absolute bg-white/90 shadow-sm px-2 md:px-3 py-0.5 md:py-1 border border-amber-200 rounded-full font-bold text-[8px] text-amber-600 md:text-[10px]">AUTHENTIC</div>
+            <img src={ATTRACTION_IMAGES.photoBooth} class="opacity-90 w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" alt="Photo Booth" />
+            <div class="absolute inset-0 flex flex-col justify-end bg-linear-to-t from-amber-900/80 to-transparent p-3 md:p-5">
+              <h3 class="font-bold text-white text-sm md:text-lg transition-transform md:group-hover:-translate-y-1 duration-300">Smart Photo Booth</h3>
+              <p class="hidden md:block opacity-0 md:group-hover:opacity-100 mt-1 max-h-0 md:group-hover:max-h-20 overflow-hidden text-amber-200 text-xs leading-relaxed transition-all duration-300">Foto dengan berbagai template menarik dan langsung cetak di tempat.</p>
+            </div>
+      </div>
+
+      <!-- 4. LACX / Culture (1x1) - HIDDEN -->
+      
+      <div class="group relative bg-sky-100 rounded-2xl md:rounded-4xl ring-1 ring-zinc-200 h-[140px] md:h-auto overflow-hidden cursor-pointer">
+            <div class="top-2 md:top-4 right-2 md:right-4 z-10 absolute bg-white/90 shadow-sm px-2 md:px-3 py-0.5 md:py-1 border border-sky-200 rounded-full font-bold text-[8px] text-sky-600 md:text-[10px]">CULTURE</div>
+            <img src={ATTRACTION_IMAGES.pepadu} class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" alt="LACX" />
+            <div class="absolute inset-0 flex flex-col justify-end bg-linear-to-t from-sky-900/80 to-transparent p-3 md:p-5">
+              <h3 class="font-bold text-white text-sm md:text-lg transition-transform md:group-hover:-translate-y-1 duration-300">Arena Outdoor 360°</h3>
+              <p class="hidden md:block opacity-0 md:group-hover:opacity-100 mt-1 max-h-0 md:group-hover:max-h-20 overflow-hidden text-sky-200 text-xs leading-relaxed transition-all duration-300">Dirancang khusus untuk pertunjukan Perisean, seni bela diri khas Lombok.</p>
+            </div>
+      </div>
+     
+
+      <!-- 5. Coming Soon (col-span-2) with Teaser Image -->
+      <div class="group relative flex flex-col justify-center items-center bg-zinc-900 p-4 md:p-6 border-2 border-zinc-700 hover:border-sky-500 border-dashed rounded-2xl md:rounded-4xl ring-1 ring-zinc-700 h-[140px] md:h-auto overflow-hidden text-center transition-colors cursor-default">
+            <!-- Teaser Background Image with Dark Overlay -->
+            <img src={ATTRACTION_IMAGES.comingSoon} class="absolute inset-0 opacity-30 group-hover:opacity-40 w-full h-full object-cover transition-opacity" alt="Coming Soon Teaser" />
+            <div class="absolute inset-0 bg-zinc-900/60"></div>
+            <div class="z-10 relative">
+              <div class="flex justify-center items-center bg-sky-500/20 mx-auto mb-2 md:mb-3 border border-sky-500/30 rounded-full w-10 md:w-12 h-10 md:h-12 text-xl md:text-2xl group-hover:scale-110 transition-transform">✨</div>
+              <h3 class="font-bold text-[10px] text-sky-400 md:text-xs uppercase tracking-widest">Coming Soon</h3>
+              <p class="drop-shadow-lg mt-1 font-bold text-white text-xs md:text-sm">New Experience<br>Awaits...</p>
+            </div>
+      </div>
+  </div>
+</section>
+
+<style>
+/* Image Slideshow Animation */
+@keyframes slideshow {
+  0%, 30% { opacity: 1; }
+  33%, 97% { opacity: 0; }
+  100% { opacity: 1; }
+}
+.slideshow-img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  animation: slideshow 12s infinite;
+}
+.slideshow-img:nth-child(1) { animation-delay: 0s; }
+.slideshow-img:nth-child(2) { animation-delay: 4s; }
+.slideshow-img:nth-child(3) { animation-delay: 8s; }
+</style>

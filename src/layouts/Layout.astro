@@ -1,0 +1,43 @@
+---
+import '../styles/global.css';
+
+interface Props {
+	title?: string;
+  description?: string;
+  bodyClass?: string;
+}
+
+const { 
+  title = "RuaRasa Rekap", 
+  description = "Aplikasi Rekap Penjualan Offline-First",
+  bodyClass = "bg-zinc-50 selection:bg-emerald-500/30 dark:bg-zinc-950 font-sans text-zinc-900 dark:text-zinc-100 antialiased"
+} = Astro.props;
+---
+<!doctype html>
+<html lang="id" class="scroll-smooth">
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width" />
+		<link rel="icon" type="image/svg+xml" href="/logo.svg" />
+		<meta name="generator" content={Astro.generator} />
+    <meta name="description" content={description} />
+    <meta name="theme-color" content="#10b981" />
+		<title>{title}</title>
+    
+    <!-- Fonts: Plus Jakarta Sans -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <!-- PWA -->
+    <script>
+      import { registerSW } from 'virtual:pwa-register';
+      registerSW({
+        immediate: true,
+      });
+    </script>
+	</head>
+	<body class={bodyClass}>
+		<slot />
+	</body>
+</html>

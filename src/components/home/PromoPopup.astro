@@ -1,0 +1,242 @@
+---
+// src/components/home/PromoPopup.astro
+import { PROMO_CAROUSEL_DATA } from '../../constants';
+const activePromos = PROMO_CAROUSEL_DATA.filter(p => p.isActive);
+---
+
+{activePromos.length > 0 && (
+<div 
+  id="promo-popup" 
+  class="z-100 fixed inset-0 flex justify-center items-center opacity-0 transition-opacity duration-500 pointer-events-none" 
+  aria-labelledby="modal-title" 
+  role="dialog" 
+  aria-modal="true"
+  data-promo-count={activePromos.length}
+  data-images-count={JSON.stringify(activePromos.map(p => p.images.length))}
+>
+  <!-- Backdrop -->
+  <div class="absolute inset-0 bg-zinc-950/80 backdrop-blur-md transition-opacity" id="promo-backdrop"></div>
+
+  <!-- Popup Panel -->
+  <div 
+    class="relative bg-white shadow-2xl mx-4 rounded-4xl w-full max-w-sm md:max-w-md overflow-hidden scale-90 transition-all duration-500 ease-out transform" 
+    id="promo-panel"
+  >
+      <!-- Close Button -->
+      <button 
+        type="button" 
+        class="top-4 right-4 z-30 absolute bg-black/20 hover:bg-black/40 backdrop-blur-md p-2 rounded-full focus:outline-none text-white hover:rotate-90 transition-all" 
+        id="close-promo"
+      >
+        <span class="sr-only">Close</span>
+        <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12" />
+        </svg>
+      </button>
+
+      <!-- Carousel Container -->
+      <div id="promo-carousel-track" class="flex w-full transition-transform duration-700 ease-in-out">
+        {activePromos.map((promo, pIndex) => (
+          <div class="flex flex-col w-full shrink-0">
+            <!-- Top Image Area ( Slideshow per promo ) -->
+            <div class="group relative bg-zinc-100 h-80 md:h-[350px] overflow-hidden">
+              {promo.images.map((imgSrc, iIndex) => (
+                <img 
+                  src={imgSrc} 
+                  alt={`${promo.altText} - ${iIndex + 1}`} 
+                  class={`absolute inset-0 w-full h-full object-cover object-center transition-all duration-1000 ease-in-out promo-slide-${pIndex} group-hover:scale-105 ${iIndex === 0 ? 'opacity-100 z-10' : 'opacity-0 z-0'}`}
+                />
+              ))}
+              <!-- Subtle Overlay only on top for the close button visibility -->
+              <div class="z-20 absolute inset-0 bg-linear-to-b from-black/40 to-transparent h-24 pointer-events-none"></div>
+            </div>
+
+            <!-- Content Area -->
+            <div class="flex flex-col flex-1 justify-between bg-white p-6 md:p-8 text-center">
+                <p class="mb-6 font-medium text-zinc-600 text-sm md:text-base leading-relaxed" set:html={promo.descriptionHtml} />
+                
+                <a 
+                  href={promo.ctaLink} 
+                  class="group flex justify-center items-center gap-2 bg-zinc-900 hover:bg-sky-600 shadow-xl shadow-zinc-200 hover:shadow-sky-500/30 py-4 rounded-2xl w-full font-bold text-white transition-all hover:-translate-y-1 duration-300 promo-cta transform"
+                >
+                    <span>{promo.ctaText}</span>
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-5 h-5 transition-transform group-hover:translate-x-1"><path fill-rule="evenodd" d="M12.97 3.97a.75.75 0 011.06 0l7.5 7.5a.75.75 0 010 1.06l-7.5 7.5a.75.75 0 11-1.06-1.06l6.22-6.22H3a.75.75 0 010-1.5h16.19l-6.22-6.22a.75.75 0 010-1.06z" clip-rule="evenodd" /></svg>
+                </a>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <!-- Carousel Indicators (Dots) -->
+      {activePromos.length > 1 && (
+        <div class="top-[300px] md:top-[330px] right-0 left-0 z-30 absolute flex justify-center gap-2 drop-shadow-md">
+          {activePromos.map((_, idx) => (
+            <button class={`promo-dot h-2 rounded-full shadow-sm transition-all ${idx === 0 ? 'bg-white w-6' : 'bg-white/60 w-2 hover:bg-white/90'}`} data-idx={idx} aria-label={`Go to promo ${idx + 1}`}></button>
+          ))}
+        </div>
+      )}
+
+      <!-- Carousel Arrows -->
+      {activePromos.length > 1 && (
+        <>
+          <button 
+            type="button"
+            class="top-40 md:top-[175px] left-3 z-30 absolute bg-black/20 hover:bg-black/50 backdrop-blur-md p-2 rounded-full focus:outline-none text-white transition-all -translate-y-1/2 hover:-translate-x-1 promo-prev"
+            aria-label="Previous promo"
+          >
+            <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 19l-7-7 7-7" />
+            </svg>
+          </button>
+          <button 
+            type="button"
+            class="top-40 md:top-[175px] right-3 z-30 absolute bg-black/20 hover:bg-black/50 backdrop-blur-md p-2 rounded-full focus:outline-none text-white transition-all -translate-y-1/2 hover:translate-x-1 promo-next"
+            aria-label="Next promo"
+          >
+            <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7" />
+            </svg>
+          </button>
+        </>
+      )}
+  </div>
+</div>
+)}
+
+<script>
+  function initPromoPopup() {
+    const popup = document.getElementById('promo-popup');
+    const panel = document.getElementById('promo-panel');
+    const closeBtn = document.getElementById('close-promo');
+    const backdrop = document.getElementById('promo-backdrop');
+    const track = document.getElementById('promo-carousel-track');
+    const ctas = document.querySelectorAll('.promo-cta');
+    const dots = document.querySelectorAll('.promo-dot');
+    const btnPrev = document.querySelector('.promo-prev');
+    const btnNext = document.querySelector('.promo-next');
+
+    if (!popup || !panel || !closeBtn || !backdrop) return;
+
+    const promoCount = parseInt(popup.dataset.promoCount || '0');
+    const promosData = JSON.parse(popup.dataset.imagesCount || '[]');
+
+    // Show popup
+    setTimeout(() => {
+      popup.classList.remove('opacity-0', 'pointer-events-none');
+      panel.classList.remove('scale-90');
+      panel.classList.add('scale-100');
+      document.body.style.overflow = 'hidden'; 
+    }, 1500);
+
+    const clearAllIntervals = () => {
+      // @ts-ignore
+      if (window.promoCarouselInterval) clearInterval(window.promoCarouselInterval);
+      // @ts-ignore
+      if (window.promoSlideshowIntervals) {
+        // @ts-ignore
+        window.promoSlideshowIntervals.forEach(interval => clearInterval(interval));
+      }
+    };
+
+    const closePopup = () => {
+      popup.classList.add('opacity-0', 'pointer-events-none');
+      panel.classList.remove('scale-100');
+      panel.classList.add('scale-90');
+      document.body.style.overflow = '';
+      clearAllIntervals();
+    };
+
+    closeBtn.addEventListener('click', closePopup);
+    backdrop.addEventListener('click', closePopup);
+    ctas.forEach(cta => cta.addEventListener('click', closePopup));
+
+    clearAllIntervals();
+
+    // 1. CAROUSEL LOGIC (Changing Ads)
+    let currentAdIndex = 0;
+    if (promoCount > 1 && track) {
+      const updateCarousel = (index: number) => {
+        track.style.transform = `translateX(-${index * 100}%)`;
+        dots.forEach((dot, i) => {
+          if (i === index) {
+            dot.classList.remove('bg-white/60', 'w-2');
+            dot.classList.add('bg-white', 'w-6');
+          } else {
+            dot.classList.add('bg-white/60', 'w-2');
+            dot.classList.remove('bg-white', 'w-6');
+          }
+        });
+      };
+
+      const resetCarouselInterval = () => {
+        // @ts-ignore
+        clearInterval(window.promoCarouselInterval);
+        // @ts-ignore
+        window.promoCarouselInterval = setInterval(() => {
+          currentAdIndex = (currentAdIndex + 1) % promoCount;
+          updateCarousel(currentAdIndex);
+        }, 7000);
+      };
+
+      // @ts-ignore
+      window.promoCarouselInterval = setInterval(() => {
+        currentAdIndex = (currentAdIndex + 1) % promoCount;
+        updateCarousel(currentAdIndex);
+      }, 7000); // Ganti iklan setiap 7 detik
+
+      // Arrow Clicks
+      if (btnPrev) {
+        btnPrev.addEventListener('click', () => {
+          currentAdIndex = (currentAdIndex - 1 + promoCount) % promoCount;
+          updateCarousel(currentAdIndex);
+          resetCarouselInterval();
+        });
+      }
+      if (btnNext) {
+        btnNext.addEventListener('click', () => {
+          currentAdIndex = (currentAdIndex + 1) % promoCount;
+          updateCarousel(currentAdIndex);
+          resetCarouselInterval();
+        });
+      }
+
+      // Manual dot click
+      dots.forEach(dot => {
+        dot.addEventListener('click', (e) => {
+          currentAdIndex = parseInt((e.currentTarget as HTMLElement).dataset.idx || '0');
+          updateCarousel(currentAdIndex);
+          resetCarouselInterval();
+        });
+      });
+    }
+
+    // 2. SLIDESHOW LOGIC (Changing Images inside an Ad)
+    // @ts-ignore
+    window.promoSlideshowIntervals = [];
+    promosData.forEach((imgCount: number, pIndex: number) => {
+      if (imgCount > 1) {
+        let currentImgIndex = 0;
+        const slides = document.querySelectorAll(`.promo-slide-${pIndex}`);
+        
+        const interval = setInterval(() => {
+          // Hide current
+          slides[currentImgIndex].classList.remove('opacity-100', 'z-10');
+          slides[currentImgIndex].classList.add('opacity-0', 'z-0');
+          
+          // Next
+          currentImgIndex = (currentImgIndex + 1) % imgCount;
+          
+          // Show next
+          slides[currentImgIndex].classList.remove('opacity-0', 'z-0');
+          slides[currentImgIndex].classList.add('opacity-100', 'z-10');
+        }, 3000); // Ganti gambar dalam iklan setiap 3 detik
+        
+        // @ts-ignore
+        window.promoSlideshowIntervals.push(interval);
+      }
+    });
+  }
+
+  initPromoPopup();
+  document.addEventListener('astro:after-swap', initPromoPopup);
+</script>

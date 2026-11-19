@@ -1,0 +1,45 @@
+---
+// src/components/home/AboutRuaRasa.astro
+import { ABOUT_IMAGES } from '../../constants';
+---
+<!-- TENTANG RUA RASA Section -->
+<section id="about" class="bg-white pt-16 md:pt-24 pb-0 overflow-hidden">
+  <div class="mx-auto px-6 max-w-6xl">
+    <div class="items-center gap-8 md:gap-16 grid grid-cols-1 md:grid-cols-2">
+      <!-- Left: Image with decorative frame -->
+      <div class="relative">
+        <div class="z-10 relative">
+          <div class="shadow-2xl border-4 border-white rounded-3xl overflow-hidden -rotate-3 hover:rotate-0 transition-transform duration-500">
+            <img src={ABOUT_IMAGES.study} alt="Rua Rasa Experience" class="w-full h-[300px] md:h-[400px] object-cover" />
+          </div>
+        </div>
+        <!-- Decorative elements -->
+        <div class="top-4 -left-4 -z-10 absolute bg-sky-200 rounded-3xl w-full h-full"></div>
+      </div>
+
+      <!-- Right: Text Content -->
+      <div class="py-4 md:py-0">
+        <h2 class="mb-3 font-black text-zinc-900 text-xl md:text-2xl lg:text-3xl leading-tight">
+          Sebenarnya Apa Itu <span class="text-sky-600">Rua Rasa</span>? 🤔
+        </h2>
+        <p class="mb-5 font-medium text-zinc-500 text-sm md:text-base">
+          Tempat di mana sejarah dan teknologi bertemu dalam satu pengalaman seru!
+        </p>
+        
+        <div class="space-y-4 font-medium text-zinc-600 text-sm md:text-base leading-relaxed">
+          <p>
+            Pernah nggak sih kepikiran belajar sejarah tapi dengan cara yang asik? Nah, <strong class="text-zinc-800">Rua Rasa</strong> hadir buat kamu yang pengen pengalaman berbeda! Di sini, kamu bisa menikmati wahana <strong class="text-zinc-800">Edutainment</strong> pertama di Lombok yang menggabungkan teknologi 4D dengan kekayaan budaya Sasak.
+          </p>
+          <p>
+            Lihat ilustrasi di bawah? Yup, itu gambaran perjalanan yang bakal kamu alami di wahana Immersive kami! Cerita <strong class="text-zinc-800">sejarah dan budaya Lombok</strong> yang dikemas dengan teknologi visual yang keren. Gimana? Siap menjelajah? 😉
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <!-- Fluid Wave Image -->
+  <div class="relative mt-12 md:mt-16 w-full">
+    <img src={ABOUT_IMAGES.history} alt="Rua Rasa History" class="w-full h-auto object-cover" />
+  </div>
+</section>

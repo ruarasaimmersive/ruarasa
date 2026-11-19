@@ -1,0 +1,32 @@
+---
+// src/components/home/TickerBanner.astro
+---
+<!-- RUNNING TEXT BANNER -->
+<div class="bg-white py-2 md:py-4 w-full overflow-hidden">
+  <div class="bg-sky-500 shadow-lg py-2 md:py-4 border-black border-y-2 md:border-y-4 overflow-hidden -rotate-1 scale-105 origin-center transform">
+    <div class="animate-ticker">
+      <span class="font-black text-black text-sm md:text-xl uppercase tracking-widest whitespace-nowrap ticker-content">
+        Opening Hours: 08:00 - 21:30 WITA &nbsp;&nbsp;•&nbsp;&nbsp; Interactive Light Art &nbsp;&nbsp;•&nbsp;&nbsp; Historical Journey &nbsp;&nbsp;•&nbsp;&nbsp; Kid Friendly &nbsp;&nbsp;•&nbsp;&nbsp; Instagrammable Spots &nbsp;&nbsp;•&nbsp;&nbsp; Coffee & Snacks &nbsp;&nbsp;•&nbsp;&nbsp;
+      </span>
+      <span class="font-black text-black text-sm md:text-xl uppercase tracking-widest whitespace-nowrap ticker-content">
+        Opening Hours: 08:00 - 21:30 WITA &nbsp;&nbsp;•&nbsp;&nbsp; Interactive Light Art &nbsp;&nbsp;•&nbsp;&nbsp; Historical Journey &nbsp;&nbsp;•&nbsp;&nbsp; Kid Friendly &nbsp;&nbsp;•&nbsp;&nbsp; Instagrammable Spots &nbsp;&nbsp;•&nbsp;&nbsp; Coffee & Snacks &nbsp;&nbsp;•&nbsp;&nbsp;
+      </span>
+    </div>
+
+<style>
+/* Ticker Animation - Seamless Loop */
+@keyframes ticker {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
+}
+.animate-ticker {
+  display: inline-flex;
+  animation: ticker 30s linear infinite;
+}
+.ticker-content {
+  display: flex;
+  padding-right: 2rem;
+}
+</style>
+  </div>
+</div>
