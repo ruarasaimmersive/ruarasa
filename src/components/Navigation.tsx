@@ -1,16 +1,14 @@
 import React, { useState, useEffect } from 'react'
 import { initDB } from '../db'
-import { GENERAL_SCRIPT_URL } from '../constants'
+import { upsertSalesToDB } from '../lib/supabase'
 
 const Navigation = ({
   activePage,
 }: {
   activePage: 'input' | 'history' | 'dashboard' | 'settings' | 'ticket'
 }) => {
-  const [isOpen, setIsOpen] = useState(false)
   const [cashierName, setCashierName] = useState('-')
   const [scrolled, setScrolled] = useState(false)
-
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false)
 
   useEffect(() => {
@@ -21,12 +19,9 @@ const Navigation = ({
     return () => window.removeEventListener('scroll', handleScroll)
   }, [])
 
-  // ========== AUTO-SYNC LOGIC (Runs on all Kasir pages) ==========
+  // ========== AUTO-SYNC LOGIC KE SUPABASE (Runs on all Kasir pages) ==========
   useEffect(() => {
-    const AUTO_SYNC_INTERVAL = 10 * 60 * 1000 // 10 minutes
-
     const performAutoSync = async () => {
-      // Check if online
       if (!navigator.onLine) {
         console.log('[AutoSync] Offline, skipping...')
         return
@@ -36,98 +31,41 @@ const Navigation = ({
         const db = await initDB()
         const allSales = await db.sales.find().exec()
 
-        // Helper to check if date is today (Local Time)
-        const isToday = (isoString: string) => {
-          const date = new Date(isoString)
-          const today = new Date()
-          return (
-            date.getDate() === today.getDate() &&
-            date.getMonth() === today.getMonth() &&
-            date.getFullYear() === today.getFullYear()
-          )
-        }
-
         const unsynced = allSales
           .map((d: any) => d.toJSON())
-          .filter((s: any) => !s.is_synced) // Filter Unsynced (All Time)
+          .filter((s: any) => !s.is_synced)
 
         if (unsynced.length === 0) {
-          console.log('[AutoSync] No unsynced data for today.')
+          console.log('[AutoSync] No unsynced data.')
           return
         }
 
-        const generalData = unsynced
+        console.log(
+          `[AutoSync] Syncing ${unsynced.length} items to Supabase...`,
+        )
 
-        const mapPayload = (items: any[]) => ({
-          transactions: items
-            .sort(
-              (a: any, b: any) =>
-                new Date(a.tanggal).getTime() - new Date(b.tanggal).getTime(),
-            )
-            .map((t: any) => {
-              // Direct schema mapping
-              const variant = t.variant || '-'
-              const nameLower = t.nama_barang?.toLowerCase() || ''
-              const isImmersive = nameLower.includes('immersive') || nameLower.includes('tiket')
+        await upsertSalesToDB(unsynced)
 
-              // Reported Price for Cashier
-              let displayTotal = t.display_total ?? t.total_harga
+        const ids = unsynced.map((s: any) => s.transaction_id)
+        const docs = await db.sales
+          .find({ selector: { transaction_id: { $in: ids } } })
+          .exec()
 
-              return {
-                transaction_id: t.transaction_id,
-                local_id: t.transaction_id, // Match GAS: local_id
-                order_id: t.order_id,
-                timestamp: t.tanggal,
-                product: t.nama_barang, // Match GAS: product
-                quantity: t.qty,
-                total_price: Number(t.total_harga) || 0, // Real Price
-                display_price: Number(displayTotal) || 0, // Secret/Reported Price
-                variant: variant, // 'REGULER' | 'OUTING' | '-'
-                payment: t.metode_pembayaran || 'CASH',
-                cashier: t.kasir,
-                customer: t.customer_name || '',
-                no_telp: t.nomor_hp || '', // Match GAS: no_telp
-                type: t.type || 'IN',
-                notes: t.notes || '',
-                deleted: t.is_deleted || false,
-              }
-            }),
-        })
-
-        // 1. Sync General Data
-        if (generalData.length > 0) {
-          console.log(
-            `[AutoSync] Syncing ${generalData.length} items to GENERAL...`,
-          )
-          try {
-            await fetch(GENERAL_SCRIPT_URL, {
-              method: 'POST',
-              mode: 'no-cors',
-              body: JSON.stringify(mapPayload(generalData)),
-            })
-            // Mark success locally
-            const ids = generalData.map((s: any) => s.transaction_id)
-            const docs = await db.sales
-              .find({ selector: { transaction_id: { $in: ids } } })
-              .exec()
-            await Promise.all(
-              docs.map((doc: any) => doc.patch({ is_synced: true })),
-            )
-          } catch (err) {
-            console.error('[AutoSync] General Sync Failed', err)
-          }
-        }
+        await Promise.all(
+          docs.map((doc: any) => doc.patch({ is_synced: true })),
+        )
 
         console.log('[AutoSync] Completed cycle.')
       } catch (e) {
-        console.error('[AutoSync] Failed:', e)
+        console.error('[AutoSync] Supabase Sync Failed:', e)
       }
     }
 
     let isSyncingReq = false
     const tickInterval = setInterval(() => {
       const isPrintingMode = localStorage.getItem('is_printing_mode') === 'true'
-      const isEnabled = localStorage.getItem('auto_sync_enabled') !== 'false' && !isPrintingMode
+      const isEnabled =
+        localStorage.getItem('auto_sync_enabled') !== 'false' && !isPrintingMode
       if (!isEnabled) {
         localStorage.removeItem('next_sync_time')
         return
@@ -147,7 +85,6 @@ const Navigation = ({
         if (isSyncingReq) return
 
         isSyncingReq = true
-        // Set next sync time early so other tabs/renders see it too
         localStorage.setItem('next_sync_time', (now + intervalMs).toString())
 
         performAutoSync().finally(() => {
@@ -168,7 +105,6 @@ const Navigation = ({
 
   const confirmLogout = async () => {
     localStorage.removeItem('cashier_name')
-    // Hapus HttpOnly cookie via API endpoint
     await fetch('/api/auth/logout', { method: 'POST' })
     window.location.href = '/login-cashier'
   }
@@ -316,11 +252,11 @@ const Navigation = ({
 
       {/* Logout Confirmation Modal */}
       {showLogoutConfirm && (
-        <div 
+        <div
           className='z-50 fixed inset-0 flex justify-center items-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in'
           onClick={() => setShowLogoutConfirm(false)}
         >
-          <div 
+          <div
             className='bg-white dark:bg-zinc-900 shadow-2xl p-6 border border-zinc-200 dark:border-zinc-700 rounded-3xl w-full max-w-sm text-center animate-in zoom-in-95'
             onClick={(e) => e.stopPropagation()}
           >

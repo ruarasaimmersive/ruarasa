@@ -1,6 +1,7 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { initDB, type SaleDoc } from '../db'
-import { GENERAL_SCRIPT_URL, DEFAULT_TICKET_PACKAGES } from '../constants'
+import { DEFAULT_TICKET_PACKAGES } from '../constants'
+import { upsertSalesToDB, getSalesFromDB } from '../lib/supabase'
 
 export const useSalesSync = () => {
   const [sales, setSales] = useState<SaleDoc[]>([])
@@ -8,7 +9,6 @@ export const useSalesSync = () => {
   const [isSyncing, setIsSyncing] = useState(false)
   const [editingItem, setEditingItem] = useState<SaleDoc | null>(null)
 
-  // Confirmation State
   const [confirmConfig, setConfirmConfig] = useState<{
     isOpen: boolean
     title: string
@@ -24,7 +24,6 @@ export const useSalesSync = () => {
     onConfirm: () => {},
   })
 
-  // Toast State
   const [showToast, setShowToast] = useState({
     show: false,
     message: '',
@@ -34,43 +33,129 @@ export const useSalesSync = () => {
   const closeConfirm = () =>
     setConfirmConfig((prev) => ({ ...prev, isOpen: false }))
 
+  const pullFromSupabase = useCallback(async (silent = true) => {
+    if (!navigator.onLine) return 0
+    if (!silent) setIsSyncing(true)
+
+    try {
+      const rows = await getSalesFromDB(300)
+      if (!rows || rows.length === 0) {
+        if (!silent) {
+          setShowToast({
+            show: true,
+            message: 'Belum ada data transaksi di server Supabase.',
+            variant: 'error',
+          })
+        }
+        return 0
+      }
+
+      const db = await initDB()
+      const localDocs = await db.sales.find().exec()
+      const unsyncedIds = new Set(
+        localDocs
+          .map((d: any) => d.toJSON())
+          .filter((s: any) => !s.is_synced)
+          .map((s: any) => s.transaction_id),
+      )
+
+      const mappedDocs = rows
+        .filter((r) => !unsyncedIds.has(r.transaction_id))
+        .map((r) => ({
+          transaction_id: String(r.transaction_id),
+          order_id: Number(r.order_id) || 0,
+          tanggal: new Date(r.tanggal).toISOString(),
+          nama_barang: String(r.nama_barang || 'Item'),
+          qty: Number(r.qty) || 1,
+          harga_satuan: Number(r.harga_satuan) || 0,
+          total_harga: Number(r.total_harga) || 0,
+          display_total: Number(r.display_total ?? r.total_harga) || 0,
+          metode_pembayaran: String(r.metode_pembayaran || 'CASH'),
+          kasir: String(r.kasir || '-'),
+          customer_name: String(r.customer_name || ''),
+          nomor_hp: String(r.nomor_hp || '-'),
+          source: String(r.source || 'UMUM'),
+          type: String(r.type || 'IN'),
+          is_synced: true,
+          is_deleted: Boolean(r.is_deleted),
+          notes: String(r.notes || ''),
+          variant: String(r.variant || '-'),
+          ...(r.booking_id ? { booking_id: Number(r.booking_id) } : {}),
+        }))
+
+      if (mappedDocs.length > 0) {
+        await db.sales.bulkUpsert(mappedDocs)
+        const maxOrderId = mappedDocs.reduce(
+          (max, item) => Math.max(max, item.order_id),
+          parseInt(localStorage.getItem('last_order_id') || '0', 10),
+        )
+        localStorage.setItem('last_order_id', String(maxOrderId))
+      }
+
+      if (!silent) {
+        setShowToast({
+          show: true,
+          message: `Berhasil mengambil ${mappedDocs.length} data dari Supabase! ✅`,
+          variant: 'success',
+        })
+      }
+
+      return mappedDocs.length
+    } catch (e: any) {
+      console.error('[pullFromSupabase] Error:', e)
+      if (!silent) {
+        setShowToast({
+          show: true,
+          message: `Gagal ambil data: ${e.message} ❌`,
+          variant: 'error',
+        })
+      }
+      return 0
+    } finally {
+      if (!silent) setIsSyncing(false)
+    }
+  }, [])
+
   useEffect(() => {
     const name = localStorage.getItem('cashier_name') || ''
     setCurrentCashier(name)
-    const selector = {}
 
     let sub: any
     let isMounted = true
+
     const load = async () => {
       const db = await initDB()
       if (!isMounted) return
+
       sub = db.sales
         .find({
-          selector: selector,
-          sort: [{ order_id: 'desc' }],
+          selector: {},
+          sort: [{ tanggal: 'desc' }],
         })
         .$.subscribe((docs: any[]) => {
           setSales(docs.map((d) => d.toJSON()))
         })
+
+      await pullFromSupabase(true)
     }
+
     load()
     return () => {
       isMounted = false
       if (sub) sub.unsubscribe()
     }
-  }, [])
+  }, [pullFromSupabase])
 
   const handleDeleteAll = () => {
     setConfirmConfig({
       isOpen: true,
-      title: 'Hapus Semua Data?',
+      title: 'Hapus Cache Lokal?',
       message:
-        'Semua riwayat transaksi (sesuai peran anda) akan dihapus permanen dari perangkat ini.',
+        'Riwayat transaksi di browser perangkat ini akan dihapus (data di Supabase tetap aman dan bisa ditarik ulang).',
       variant: 'danger',
       onConfirm: async () => {
         const db = await initDB()
-        const selector = {}
-        const docs = await db.sales.find({ selector }).exec()
+        const docs = await db.sales.find({ selector: {} }).exec()
         await Promise.all(docs.map((d: any) => d.remove()))
         closeConfirm()
       },
@@ -81,76 +166,38 @@ export const useSalesSync = () => {
     const db = await initDB()
     const allDocs = await db.sales.find().exec()
     const allData = allDocs.map((d: any) => d.toJSON())
-
-    // Filter unsynced
     const unsynced = allData.filter((s: any) => !s.is_synced)
 
     const processSync = async (dataToSync: any[]) => {
       setIsSyncing(true)
-
-      const mapPayload = (items: any[]) => ({
-        transactions: items
-          .sort(
-            (a: any, b: any) =>
-              new Date(a.tanggal).getTime() - new Date(b.tanggal).getTime(),
-          )
-          .map((t: any) => {
-            const variant = t.variant || '-'
-            const displayTotal = t.display_total ?? t.total_harga
-
-            return {
-              transaction_id: t.transaction_id,
-              local_id: t.transaction_id,
-              order_id: t.order_id,
-              timestamp: t.tanggal,
-              product: t.nama_barang,
-              quantity: t.qty,
-              total_price: Number(t.total_harga) || 0,
-              display_price: Number(displayTotal) || 0,
-              variant: variant,
-              payment: t.metode_pembayaran || 'CASH',
-              cashier: t.kasir,
-              customer: t.customer_name || '',
-              no_telp: t.nomor_hp || '',
-              is_dp: t.is_dp || false,
-              dp_amount: t.dp_amount || 0,
-              type: t.type || 'IN',
-              notes: t.notes || '',
-              deleted: t.is_deleted || false,
-            }
-          }),
-      })
-
       try {
         if (dataToSync.length > 0) {
-          await fetch(GENERAL_SCRIPT_URL, {
-            method: 'POST',
-            mode: 'no-cors',
-            body: JSON.stringify(mapPayload(dataToSync)),
-          })
+          await upsertSalesToDB(dataToSync)
+
+          const ids = dataToSync.map((s: any) => s.transaction_id)
+          const docsToUpdate = await db.sales
+            .find({ selector: { transaction_id: { $in: ids } } })
+            .exec()
+
+          await Promise.all(
+            docsToUpdate.map((doc: any) => doc.patch({ is_synced: true })),
+          )
         }
 
-        const ids = dataToSync.map((s: any) => s.transaction_id)
-        const docsToUpdate = await db.sales
-          .find({ selector: { transaction_id: { $in: ids } } })
-          .exec()
-
-        await Promise.all(
-          docsToUpdate.map((doc: any) => doc.patch({ is_synced: true })),
-        )
+        await pullFromSupabase(true)
 
         closeConfirm()
         setShowToast({
           show: true,
-          message: 'Sync Berhasil ✅',
+          message: 'Sinkronisasi Supabase Berhasil ✅',
           variant: 'success',
         })
-      } catch (e) {
+      } catch (e: any) {
         console.error(e)
         closeConfirm()
         setShowToast({
           show: true,
-          message: 'Gagal Sync ❌',
+          message: `Gagal Sync: ${e.message || 'Cek koneksi'} ❌`,
           variant: 'error',
         })
       } finally {
@@ -162,18 +209,18 @@ export const useSalesSync = () => {
       setConfirmConfig({
         isOpen: true,
         title: 'Sinkronisasi Data',
-        message: `Akan mengirim ${unsynced.length} transaksi update/hapus ke server. Lanjutkan?`,
+        message: `Akan mengirim ${unsynced.length} transaksi ke Supabase dan memuat data terbaru. Lanjutkan?`,
         variant: 'info',
         onConfirm: () => processSync(unsynced),
       })
     } else {
       setConfirmConfig({
         isOpen: true,
-        title: 'Semua Data Tersinkron',
+        title: 'Sinkronkan Ulang?',
         message:
-          'Data lokal sudah bersih. Apakah anda ingin MENGIRIM ULANG semua data ke server? (Pilih ini jika data di spreadsheet rusak/kosong).',
+          'Semua data lokal sudah tersinkron. Kirim ulang seluruh data lokal ke Supabase dan tarik pembaruan terbaru?',
         variant: 'info',
-        confirmText: 'Resync Semua',
+        confirmText: 'Sync Sekarang',
         onConfirm: () => processSync(allData),
       })
     }
@@ -182,122 +229,13 @@ export const useSalesSync = () => {
   const handleFetchServerData = async () => {
     setConfirmConfig({
       isOpen: true,
-      title: 'Ambil Data Server',
-      message:
-        'Ambil data transaksi terakhir dari Server? Data lokal saat ini kosong.',
+      title: 'Ambil Data Supabase',
+      message: 'Tarik riwayat transaksi terbaru dari database Supabase?',
       variant: 'info',
       confirmText: 'Ambil Data',
       onConfirm: async () => {
-        setIsSyncing(true)
-        try {
-          const res = await fetch(`${GENERAL_SCRIPT_URL}?action=read`)
-          const json = await res.json()
-          let data = json.data || json
-
-          if (!Array.isArray(data) || data.length === 0) {
-            throw new Error('Data tidak ditemukan atau format salah')
-          }
-
-          const todayStr = new Date().toDateString()
-          const hasToday = data.some(
-            (r: any) => new Date(r.timestamp).toDateString() === todayStr,
-          )
-
-          if (hasToday) {
-            data = data.filter(
-              (r: any) => new Date(r.timestamp).toDateString() === todayStr,
-            )
-          } else {
-            data.sort(
-              (a: any, b: any) =>
-                new Date(b.timestamp).getTime() -
-                new Date(a.timestamp).getTime(),
-            )
-            const latestEst = new Date(data[0].timestamp).toDateString()
-            data = data.filter(
-              (r: any) => new Date(r.timestamp).toDateString() === latestEst,
-            )
-          }
-
-          const mappedDocs = data.map((r: any) => {
-            const variantStr = r.variant
-              ? String(r.variant).trim().toUpperCase()
-              : ''
-            let type = r.type || 'IN'
-
-            if (!r.type) {
-              if (variantStr === '-') {
-                type = 'OUT'
-              } else if (variantStr === 'EVENT') {
-                type = 'IN'
-              }
-            }
-
-            let notes = r.notes ? String(r.notes) : ''
-            if (variantStr && variantStr !== '-' && variantStr !== '') {
-              notes = variantStr
-            }
-
-            const qtyVal = Number(r.quantity ?? r.qty ?? 1)
-            const totalPriceVal = Number(r.total_price ?? r.total_harga ?? 0)
-            const displayPriceVal = Number(r.display_price ?? r.display_total ?? totalPriceVal)
-            const orderIdVal = Number(r.order_id ?? 0)
-
-            const rawTxId = r.local_id ?? r.transaction_id
-            const transactionIdVal = rawTxId ? String(rawTxId) : crypto.randomUUID()
-
-            const rawTanggal = r.timestamp ?? r.tanggal
-            const tanggalVal = rawTanggal ? new Date(rawTanggal).toISOString() : new Date().toISOString()
-
-            const itemNameVal = String(r.product ?? r.item_name ?? r.nama_barang ?? 'Item Server')
-            const paymentVal = String(r.payment ?? r.metode_pembayaran ?? 'CASH')
-            const cashierVal = String(r.cashier ?? r.kasir ?? 'Server')
-            const customerNameVal = String(r.customer ?? r.customer_name ?? '')
-            const phoneVal = String(r.no_telp ?? r.phone ?? r.nomor_hp ?? '-')
-
-            const isDeletedVal = String(r.deleted ?? r.is_deleted ?? 'false').toUpperCase() === 'TRUE'
-
-            return {
-              transaction_id: transactionIdVal,
-              order_id: orderIdVal,
-              tanggal: tanggalVal,
-              nama_barang: itemNameVal,
-              qty: qtyVal,
-              harga_satuan: qtyVal > 0 ? totalPriceVal / qtyVal : 0,
-              total_harga: totalPriceVal,
-              display_total: displayPriceVal,
-              metode_pembayaran: paymentVal,
-              kasir: cashierVal,
-              customer_name: customerNameVal,
-              nomor_hp: phoneVal,
-              source: 'UMUM',
-              type: type,
-              is_synced: true,
-              is_deleted: isDeletedVal,
-              notes: notes,
-              variant: variantStr,
-            }
-          })
-
-          const db = await initDB()
-          await db.sales.bulkUpsert(mappedDocs)
-
-          setShowToast({
-            show: true,
-            message: `Berhasil mengambil ${mappedDocs.length} data! ✅`,
-            variant: 'success',
-          })
-        } catch (e: any) {
-          console.error(e)
-          setShowToast({
-            show: true,
-            message: `Gagal ambil data: ${e.message} ❌`,
-            variant: 'error',
-          })
-        } finally {
-          setIsSyncing(false)
-          closeConfirm()
-        }
+        await pullFromSupabase(false)
+        closeConfirm()
       },
     })
   }
@@ -311,9 +249,6 @@ export const useSalesSync = () => {
       const db = await initDB()
       const doc = await db.sales.findOne(updatedItem.transaction_id).exec()
       if (doc) {
-        const isToday =
-          new Date(doc.tanggal).toDateString() === new Date().toDateString()
-
         let newTotal = updatedItem.harga_satuan * updatedItem.qty
         if (updatedItem.type === 'OUT') {
           newTotal = updatedItem.total_harga
@@ -321,13 +256,15 @@ export const useSalesSync = () => {
 
         let newDisplayTotal = newTotal
         const pkg = DEFAULT_TICKET_PACKAGES.find(
-          (p) => p.variant === updatedItem.variant && p.nominal === updatedItem.harga_satuan
+          (p) =>
+            p.variant === updatedItem.variant &&
+            p.nominal === updatedItem.harga_satuan,
         )
         if (pkg) {
           newDisplayTotal = pkg.displayNominal * updatedItem.qty
         }
 
-        await doc.patch({
+        const patchedFields = {
           nama_barang: updatedItem.nama_barang,
           qty: updatedItem.qty,
           harga_satuan: updatedItem.harga_satuan,
@@ -338,8 +275,15 @@ export const useSalesSync = () => {
           variant: updatedItem.variant,
           total_harga: newTotal,
           display_total: newDisplayTotal,
-          is_synced: isToday ? false : doc.is_synced,
-        })
+          is_synced: false,
+        }
+
+        await doc.patch(patchedFields)
+
+        if (navigator.onLine) {
+          await upsertSalesToDB([{ ...doc.toJSON(), ...patchedFields }])
+          await doc.patch({ is_synced: true })
+        }
       }
       setEditingItem(null)
       setShowToast({
@@ -362,20 +306,19 @@ export const useSalesSync = () => {
     setConfirmConfig({
       isOpen: true,
       title: 'Hapus Transaksi?',
-      message: 'Data transaksi ini akan dihapus permanen.',
+      message: 'Data transaksi ini akan ditandai terhapus di lokal dan Supabase.',
       variant: 'danger',
       onConfirm: async () => {
         try {
           const db = await initDB()
           const doc = await db.sales.findOne(editingItem.transaction_id).exec()
           if (doc) {
-            const isToday =
-              new Date(doc.tanggal).toDateString() === new Date().toDateString()
-
-            if (doc.is_synced && isToday) {
-              await doc.patch({ is_deleted: true, is_synced: false })
-            } else {
-              await doc.remove()
+            await doc.patch({ is_deleted: true, is_synced: false })
+            if (navigator.onLine) {
+              await upsertSalesToDB([
+                { ...doc.toJSON(), is_deleted: true },
+              ])
+              await doc.patch({ is_synced: true })
             }
           }
           setEditingItem(null)

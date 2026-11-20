@@ -201,3 +201,78 @@ export const deleteTicketPackageFromDB = async (id: string) => {
     throw error
   }
 }
+
+// ==========================================
+// SALES / REKAP TRANSAKSI KASIR (SUPABASE)
+// ==========================================
+
+export type SupabaseSale = {
+  transaction_id: string
+  order_id: number
+  tanggal: string
+  nama_barang: string
+  qty: number
+  harga_satuan: number
+  total_harga: number
+  display_total?: number
+  metode_pembayaran?: string
+  nomor_hp?: string
+  customer_name?: string
+  kasir?: string
+  is_deleted?: boolean
+  source?: string
+  type?: string
+  notes?: string
+  variant?: string
+  booking_id?: number | null
+}
+
+export const upsertSalesToDB = async (items: SupabaseSale[]) => {
+  if (!items || items.length === 0) return []
+
+  const payload = items.map((t) => ({
+    transaction_id: t.transaction_id,
+    order_id: Number(t.order_id) || 0,
+    tanggal: t.tanggal,
+    nama_barang: t.nama_barang,
+    qty: Number(t.qty) || 1,
+    harga_satuan: Number(t.harga_satuan) || 0,
+    total_harga: Number(t.total_harga) || 0,
+    display_total: Number(t.display_total ?? t.total_harga) || 0,
+    metode_pembayaran: t.metode_pembayaran || 'CASH',
+    nomor_hp: t.nomor_hp || '-',
+    customer_name: t.customer_name || '',
+    kasir: t.kasir || '',
+    is_deleted: Boolean(t.is_deleted),
+    source: t.source || 'UMUM',
+    type: t.type || 'IN',
+    notes: t.notes || '',
+    variant: t.variant || '-',
+    booking_id: t.booking_id ?? null,
+  }))
+
+  const { data, error } = await supabase
+    .from('sales')
+    .upsert(payload, { onConflict: 'transaction_id' })
+    .select()
+
+  if (error) {
+    console.error('[Supabase] Error upserting sales:', error)
+    throw error
+  }
+  return data || []
+}
+
+export const getSalesFromDB = async (limit = 300) => {
+  const { data, error } = await supabase
+    .from('sales')
+    .select('*')
+    .order('tanggal', { ascending: false })
+    .limit(limit)
+
+  if (error) {
+    console.error('[Supabase] Error fetching sales:', error)
+    throw error
+  }
+  return (data || []) as SupabaseSale[]
+}

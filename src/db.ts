@@ -3,6 +3,7 @@ import { getRxStorageDexie } from 'rxdb/plugins/storage-dexie'
 import { wrappedValidateAjvStorage } from 'rxdb/plugins/validate-ajv'
 import { v4 as uuidv4 } from 'uuid'
 import { DEFAULT_PRODUCTS } from './products'
+import { upsertSalesToDB } from './lib/supabase'
 
 // RxDB Plugins
 import { RxDBQueryBuilderPlugin } from 'rxdb/plugins/query-builder'
@@ -74,7 +75,6 @@ export const salesSchema = {
     type: {
       type: 'string', // 'IN' | 'OUT'
     },
-
     notes: {
       type: 'string',
     },
@@ -148,25 +148,33 @@ export const initDB = async () => {
           migrationStrategies: {
             1: function (oldDoc: any) {
               // Migrate old data to include the new 'variant' column natively
-              const nameLower = oldDoc.nama_barang?.toLowerCase() || '';
-              const isImmersive = nameLower.includes('immersive') || nameLower.includes('tiket') || false;
-              const isPelajar = isImmersive && oldDoc.notes === 'PELAJAR';
-              const isOuting = !isPelajar && ((isImmersive && oldDoc.harga_satuan < 50000) || (oldDoc.notes && (oldDoc.notes.includes('OUTING') || oldDoc.notes.includes('[VARIANT:PAKETAN]'))));
-              
-              let variant = '-';
+              const nameLower = oldDoc.nama_barang?.toLowerCase() || ''
+              const isImmersive =
+                nameLower.includes('immersive') ||
+                nameLower.includes('tiket') ||
+                false
+              const isPelajar = isImmersive && oldDoc.notes === 'PELAJAR'
+              const isOuting =
+                !isPelajar &&
+                ((isImmersive && oldDoc.harga_satuan < 50000) ||
+                  (oldDoc.notes &&
+                    (oldDoc.notes.includes('OUTING') ||
+                      oldDoc.notes.includes('[VARIANT:PAKETAN]'))))
+
+              let variant = '-'
               if (oldDoc.type !== 'OUT') {
                 if (isImmersive) {
-                  if (isPelajar) variant = 'PELAJAR';
-                  else if (isOuting) variant = 'OUTING';
-                  else variant = 'REGULER';
+                  if (isPelajar) variant = 'PELAJAR'
+                  else if (isOuting) variant = 'OUTING'
+                  else variant = 'REGULER'
                 } else {
-                  variant = 'EVENT';
+                  variant = 'EVENT'
                 }
               }
-              oldDoc.variant = variant;
-              return oldDoc;
-            }
-          }
+              oldDoc.variant = variant
+              return oldDoc
+            },
+          },
         },
         products: {
           schema: productsSchema,
@@ -197,7 +205,7 @@ export const initDB = async () => {
         await Promise.all(DEFAULT_PRODUCTS.map((p) => db.products.insert(p)))
       } else {
         const currentProductsMap = new Map(
-          currentProducts.map((p) => [p.primary || p.get('id'), p])
+          currentProducts.map((p) => [p.primary || p.get('id'), p]),
         )
         const defaultIds = new Set(DEFAULT_PRODUCTS.map((p) => p.id))
         const operations: Promise<any>[] = []
@@ -207,7 +215,9 @@ export const initDB = async () => {
           const existing = currentProductsMap.get(defP.id)
           if (existing) {
             if (existing.name !== defP.name || existing.price !== defP.price) {
-              operations.push(existing.patch({ name: defP.name, price: defP.price }))
+              operations.push(
+                existing.patch({ name: defP.name, price: defP.price }),
+              )
             }
           } else {
             // Insert the product if it doesn't exist yet
@@ -251,7 +261,6 @@ export type SaleDoc = {
   // New Fields
   source?: 'UMUM' | string
   type?: 'IN' | 'OUT' | string
-
   notes?: string
   variant?: string
   display_total?: number
@@ -285,7 +294,6 @@ export const addSale = async (
 
   let nextId = 0
 
-  // UMUM Logic:
   // Prioritize DB sequence to handle deletions correctly.
   // Use LocalStorage/Server Sync ONLY if DB is empty.
   const lastDBId = lastSale.length > 0 ? lastSale[0].order_id : 0
@@ -294,21 +302,31 @@ export const addSale = async (
   if (lastDBId > 0) {
     nextId = lastDBId + 1
   } else {
-    // Fallback if DB is empty (e.g. first run or cleared cache)
-    // Use storedLastId which might come from 'getLastID' server sync
     nextId = storedLastId + 1
   }
 
   // Persist the new high score
   localStorage.setItem(storageKey, nextId.toString())
 
-  return db.sales.insert({
+  const insertedDoc = await db.sales.insert({
     transaction_id: uuidv4(),
     order_id: nextId,
     source, // Ensure source is saved
     type: data.type || 'IN', // Default to IN
+    is_synced: false,
     ...data,
   })
+
+  // Instant push ke Supabase di background jika online
+  if (typeof navigator !== 'undefined' && navigator.onLine) {
+    upsertSalesToDB([insertedDoc.toJSON()])
+      .then(() => insertedDoc.patch({ is_synced: true }))
+      .catch((err) =>
+        console.warn('[addSale] Gagal instant sync, masuk antrean:', err),
+      )
+  }
+
+  return insertedDoc
 }
 
 // Helper to get collection
