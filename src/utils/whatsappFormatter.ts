@@ -78,30 +78,26 @@ export const generateWAMessage = ({
   if (cRegPax > 0) {
     Object.keys(cashBreakdown.regulerDetails).forEach((lbl) => {
       const detail = cashBreakdown.regulerDetails[lbl]
-      const fLbl = lbl.replace('Reguler ', 'Reguler (') + ')'
-      msg += `${formatLine(`Cash ${fLbl}`, detail.qty, detail.total)}\n`
+      msg += `${formatLine(`Cash ${lbl}`, detail.qty, detail.total)}\n`
     })
   }
   if (qRegPax > 0) {
     Object.keys(qrisBreakdown.regulerDetails).forEach((lbl) => {
       const detail = qrisBreakdown.regulerDetails[lbl]
-      const fLbl = lbl.replace('Reguler ', 'Reguler (') + ')'
-      msg += `${formatLine(`Qris ${fLbl}`, detail.qty, detail.total)}\n`
+      msg += `${formatLine(`Qris ${lbl}`, detail.qty, detail.total)}\n`
     })
   }
 
   if (cPljPax > 0) {
     Object.keys(cashBreakdown.pelajarDetails).forEach((lbl) => {
       const detail = cashBreakdown.pelajarDetails[lbl]
-      const fLbl = lbl.replace('Pelajar ', 'Pelajar (') + ')'
-      msg += `${formatLine(`Cash ${fLbl}`, detail.qty, detail.total)}\n`
+      msg += `${formatLine(`Cash ${lbl}`, detail.qty, detail.total)}\n`
     })
   }
   if (qPljPax > 0) {
     Object.keys(qrisBreakdown.pelajarDetails).forEach((lbl) => {
       const detail = qrisBreakdown.pelajarDetails[lbl]
-      const fLbl = lbl.replace('Pelajar ', 'Pelajar (') + ')'
-      msg += `${formatLine(`Qris ${fLbl}`, detail.qty, detail.total)}\n`
+      msg += `${formatLine(`Qris ${lbl}`, detail.qty, detail.total)}\n`
     })
   }
 

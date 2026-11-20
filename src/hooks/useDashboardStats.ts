@@ -127,6 +127,7 @@ export const useDashboardStats = () => {
 
     const val = getResolvedPrice(s)
     const variant = (s.variant || s.notes || '').toUpperCase()
+    const itemName = (s.nama_barang || '').trim()
 
     if (variant.includes('OUTING') || variant.includes('PAKETAN')) {
       incomePaketan += val
@@ -144,7 +145,9 @@ export const useDashboardStats = () => {
         pricePerPax >= 1000
           ? `${Math.round(pricePerPax / 1000)}rb`
           : pricePerPax
-      const key = `Pelajar ${label}`
+      const pkgPart =
+        itemName && itemName.toLowerCase() !== 'pelajar' ? ` - ${itemName}` : ''
+      const key = `Pelajar${pkgPart} (${label})`
       if (!pelajarBreakdown[key]) {
         pelajarBreakdown[key] = { qty: 0, total: 0 }
       }
@@ -176,7 +179,9 @@ export const useDashboardStats = () => {
         pricePerPax >= 1000
           ? `${Math.round(pricePerPax / 1000)}rb`
           : pricePerPax
-      const key = `Reguler ${label}`
+      const pkgPart =
+        itemName && itemName.toLowerCase() !== 'reguler' ? ` - ${itemName}` : ''
+      const key = `Reguler${pkgPart} (${label})`
       if (!regulerBreakdown[key]) {
         regulerBreakdown[key] = { qty: 0, total: 0 }
       }
@@ -242,6 +247,7 @@ export const useDashboardStats = () => {
 
       const val = getResolvedPrice(s)
       const variant = (s.variant || s.notes || '').toUpperCase()
+      const itemName = (s.nama_barang || '').trim()
 
       if (variant.includes('OUTING') || variant.includes('PAKETAN')) {
         pkt += val
@@ -260,7 +266,9 @@ export const useDashboardStats = () => {
           pricePerPax >= 1000
             ? `${Math.round(pricePerPax / 1000)}rb`
             : pricePerPax
-        const key = `Pelajar ${label}`
+        const pkgPart =
+          itemName && itemName.toLowerCase() !== 'pelajar' ? ` - ${itemName}` : ''
+        const key = `Pelajar${pkgPart} (${label})`
         if (!pelajarDetails[key]) {
           pelajarDetails[key] = { qty: 0, total: 0 }
         }
@@ -295,7 +303,9 @@ export const useDashboardStats = () => {
           pricePerPax >= 1000
             ? `${Math.round(pricePerPax / 1000)}rb`
             : pricePerPax
-        const key = `Reguler ${label}`
+        const pkgPart =
+          itemName && itemName.toLowerCase() !== 'reguler' ? ` - ${itemName}` : ''
+        const key = `Reguler${pkgPart} (${label})`
         if (!regulerDetails[key]) {
           regulerDetails[key] = { qty: 0, total: 0 }
         }
