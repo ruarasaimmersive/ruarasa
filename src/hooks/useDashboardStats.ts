@@ -8,6 +8,13 @@ const getReportedTotal = (s: any) => {
   return typeof s.display_total === 'number' ? s.display_total : s.total_harga
 }
 
+const formatFeatureList = (features: string[]): string => {
+  if (features.length === 0) return ''
+  if (features.length === 1) return features[0]
+  if (features.length === 2) return `${features[0]} dan ${features[1]}`
+  return `${features.slice(0, -1).join(', ')} dan ${features[features.length - 1]}`
+}
+
 export const useDashboardStats = () => {
   const [sales, setSales] = useState<SaleDoc[]>([])
   const [dailyTarget, setDailyTarget] = useState(3000000)
@@ -59,10 +66,8 @@ export const useDashboardStats = () => {
   const pkgs = ticketPackages.length > 0 ? ticketPackages : DEFAULT_TICKET_PACKAGES
   const groups = packageGroups.length > 0 ? packageGroups : DEFAULT_PACKAGE_GROUPS
 
-  const getResolvedPrice = (s: any) => {
-    if (s.type === 'OUT') return s.total_harga
-
-    const matchedPkg = pkgs.find((p: any) => {
+  const findMatchedPackage = (s: any) => {
+    return pkgs.find((p: any) => {
       if (p.variant === 'EVENT') {
         const group = groups.find((g: any) => g.id === p.groupId)
         const groupName = group ? group.name : 'Event'
@@ -71,11 +76,40 @@ export const useDashboardStats = () => {
       }
       return s.nama_barang === p.name
     })
+  }
 
+  const getResolvedPrice = (s: any) => {
+    if (s.type === 'OUT') return s.total_harga
+
+    const matchedPkg = findMatchedPackage(s)
     if (matchedPkg && customNominals[matchedPkg.id] !== undefined) {
       return customNominals[matchedPkg.id] * s.qty
     }
     return getReportedTotal(s)
+  }
+
+  const buildPackageDetailLabel = (
+    categoryLabel: 'Reguler' | 'Pelajar',
+    s: any,
+    priceLabel: string | number,
+  ) => {
+    const rawName = (s.nama_barang || '').trim()
+    const cleanName = rawName.replace(/^paket\s+/i, '').trim()
+
+    if (!cleanName || cleanName.toLowerCase() === categoryLabel.toLowerCase()) {
+      return `${categoryLabel} (${priceLabel})`
+    }
+
+    const matchedPkg = findMatchedPackage(s)
+    const features: string[] = Array.isArray(matchedPkg?.features)
+      ? matchedPkg.features.filter(Boolean)
+      : []
+
+    if (features.length > 1) {
+      return `${categoryLabel} ${cleanName} Include ${formatFeatureList(features)} (${priceLabel})`
+    }
+
+    return `${categoryLabel} ${cleanName} (${priceLabel})`
   }
 
   // Today Only & Filtered by Excluded Packages
@@ -88,16 +122,7 @@ export const useDashboardStats = () => {
     if (s.type === 'OUT') return true
     if (excludedPackages.length === 0) return true
 
-    const matchedPkg = pkgs.find((p: any) => {
-      if (p.variant === 'EVENT') {
-        const group = groups.find((g: any) => g.id === p.groupId)
-        const groupName = group ? group.name : 'Event'
-        const expectedName = `${groupName} - ${p.name}`
-        return s.nama_barang === expectedName
-      }
-      return s.nama_barang === p.name
-    })
-
+    const matchedPkg = findMatchedPackage(s)
     if (matchedPkg) {
       return !excludedPackages.includes(matchedPkg.id)
     }
@@ -127,7 +152,6 @@ export const useDashboardStats = () => {
 
     const val = getResolvedPrice(s)
     const variant = (s.variant || s.notes || '').toUpperCase()
-    const itemName = (s.nama_barang || '').trim()
 
     if (variant.includes('OUTING') || variant.includes('PAKETAN')) {
       incomePaketan += val
@@ -145,9 +169,7 @@ export const useDashboardStats = () => {
         pricePerPax >= 1000
           ? `${Math.round(pricePerPax / 1000)}rb`
           : pricePerPax
-      const pkgPart =
-        itemName && itemName.toLowerCase() !== 'pelajar' ? ` - ${itemName}` : ''
-      const key = `Pelajar${pkgPart} (${label})`
+      const key = buildPackageDetailLabel('Pelajar', s, label)
       if (!pelajarBreakdown[key]) {
         pelajarBreakdown[key] = { qty: 0, total: 0 }
       }
@@ -179,9 +201,7 @@ export const useDashboardStats = () => {
         pricePerPax >= 1000
           ? `${Math.round(pricePerPax / 1000)}rb`
           : pricePerPax
-      const pkgPart =
-        itemName && itemName.toLowerCase() !== 'reguler' ? ` - ${itemName}` : ''
-      const key = `Reguler${pkgPart} (${label})`
+      const key = buildPackageDetailLabel('Reguler', s, label)
       if (!regulerBreakdown[key]) {
         regulerBreakdown[key] = { qty: 0, total: 0 }
       }
@@ -247,7 +267,6 @@ export const useDashboardStats = () => {
 
       const val = getResolvedPrice(s)
       const variant = (s.variant || s.notes || '').toUpperCase()
-      const itemName = (s.nama_barang || '').trim()
 
       if (variant.includes('OUTING') || variant.includes('PAKETAN')) {
         pkt += val
@@ -266,9 +285,7 @@ export const useDashboardStats = () => {
           pricePerPax >= 1000
             ? `${Math.round(pricePerPax / 1000)}rb`
             : pricePerPax
-        const pkgPart =
-          itemName && itemName.toLowerCase() !== 'pelajar' ? ` - ${itemName}` : ''
-        const key = `Pelajar${pkgPart} (${label})`
+        const key = buildPackageDetailLabel('Pelajar', s, label)
         if (!pelajarDetails[key]) {
           pelajarDetails[key] = { qty: 0, total: 0 }
         }
@@ -303,9 +320,7 @@ export const useDashboardStats = () => {
           pricePerPax >= 1000
             ? `${Math.round(pricePerPax / 1000)}rb`
             : pricePerPax
-        const pkgPart =
-          itemName && itemName.toLowerCase() !== 'reguler' ? ` - ${itemName}` : ''
-        const key = `Reguler${pkgPart} (${label})`
+        const key = buildPackageDetailLabel('Reguler', s, label)
         if (!regulerDetails[key]) {
           regulerDetails[key] = { qty: 0, total: 0 }
         }

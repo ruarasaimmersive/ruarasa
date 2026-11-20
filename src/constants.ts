@@ -1,401 +1,390 @@
-export const ALLOWED_CASHIERS = ['nida', 'fila', 'zakki']
+import { useState, useEffect } from 'react'
+import { initDB, type SaleDoc } from '../db'
+import type { BreakdownData } from '../utils/whatsappFormatter'
+import { DEFAULT_PACKAGE_GROUPS, DEFAULT_TICKET_PACKAGES } from '../constants'
 
-// ⚠️  URL-URL berikut dipindahkan ke .env agar tidak terekspos ke browser:
-// WA_WEBHOOK_URL       → dipakai di src/pages/api/notify.ts (server-side)
-// GENERAL_SCRIPT_URL   → masih dipakai di komponen React (lihat catatan di bawah)
-// SYNC_PRICE_SCRIPT_URL → saat ini tidak dipakai
-
-// Google Apps Script URL — masih dipakai oleh Navigation.tsx & History.tsx (client)
-// Catatan keamanan: URL ini bukan secret (hanya Google Script publik), namun
-// idealnya juga dipindahkan ke API route jika ingin sepenuhnya disembunyikan.
-export const GENERAL_SCRIPT_URL =
-  'https://script.google.com/macros/s/AKfycbwWzK2V7fVgjpB0jwlMlJiUAfrxuqabZm4SYXY_vswvrbv_Fs_pbD_kNN-_2JZTpep0/exec'
-
-// ============================================
-// LANDING PAGE IMAGES
-// ============================================
-
-// Hero Section Images
-export const HERO_IMAGES = {
-  main: '/hero/front.jpg',
-  secondary: '/hero/back.jpg',
+const getReportedTotal = (s: any) => {
+  if (s.type === 'OUT') return s.total_harga
+  return typeof s.display_total === 'number' ? s.display_total : s.total_harga
 }
 
-export const QRIS_IMAGE = '/qris.jpg'
-
-// Immersive Edupark Slideshow Images (rotates every 4 seconds)
-export const IMMERSIVE_EDUPARK_IMAGES = [
-  '/facilities/immersive-1.jpeg',
-  '/facilities/immersive-2.jpeg',
-  '/facilities/immersive-3.jpeg',
-]
-
-export const VALENTINE_IMAGES = [
-  '/event/valentine-1.jpeg',
-  '/event/valentine-2.jpeg',
-  '/event/valentine-3.jpeg',
-]
-
-// Bento Grid Attraction Images
-export const ATTRACTION_IMAGES = {
-  // Kid Zone - Currently using gradient placeholder (no image needed)
-  kidZone: '/facilities/kidzone.webp', // Set URL here when actual image is available
-
-  // Photo Booth
-  photoBooth: '/facilities/booth.webp',
-
-  // Hot Air Balloon
-  pepadu: '/facilities/pepadu.jpeg',
-
-  // Coming Soon Teaser
-  comingSoon: '/facilities/garden.jpg',
+const formatFeatureList = (features: string[]): string => {
+  if (features.length === 0) return ''
+  if (features.length === 1) return features[0]
+  if (features.length === 2) return `${features[0]} dan ${features[1]}`
+  return `${features.slice(0, -1).join(', ')} dan ${features[features.length - 1]}`
 }
 
-// About Section Images
-export const ABOUT_IMAGES = {
-  study: '/facilities/study.jpg',
-  history: '/history.webp',
-  fluid_valentine: '/event/fluid.webp',
-  card_valentine: '/event/card.jpg',
+export const useDashboardStats = () => {
+  const [sales, setSales] = useState<SaleDoc[]>([])
+  const [dailyTarget, setDailyTarget] = useState(3000000)
+  const [excludedPackages, setExcludedPackages] = useState<string[]>([])
+  const [ticketPackages, setTicketPackages] = useState<any[]>([])
+  const [packageGroups, setPackageGroups] = useState<any[]>([])
+  const [customNominals, setCustomNominals] = useState<Record<string, number>>({})
+
+  useEffect(() => {
+    const savedTarget = localStorage.getItem('daily_target')
+    if (savedTarget) setDailyTarget(parseInt(savedTarget))
+
+    const storedExcluded = localStorage.getItem('omzet_excluded_packages')
+    if (storedExcluded) setExcludedPackages(JSON.parse(storedExcluded))
+
+    const savedPkgs = localStorage.getItem('ticket_packages')
+    if (savedPkgs) setTicketPackages(JSON.parse(savedPkgs))
+
+    const savedGroups = localStorage.getItem('package_groups')
+    if (savedGroups) setPackageGroups(JSON.parse(savedGroups))
+
+    const storedCustom = localStorage.getItem('omzet_custom_nominals')
+    if (storedCustom) setCustomNominals(JSON.parse(storedCustom))
+  }, [])
+
+  useEffect(() => {
+    let sub: any
+    let isMounted = true
+    const load = async () => {
+      const db = await initDB()
+      if (!isMounted) return
+      sub = db.sales.find().$.subscribe((docs: any[]) => {
+        const data = docs.map((d) => d.toJSON())
+        setSales(data)
+      })
+    }
+    load()
+    return () => {
+      isMounted = false
+      if (sub) sub.unsubscribe()
+    }
+  }, [])
+
+  const updateDailyTarget = (target: number) => {
+    setDailyTarget(target)
+    localStorage.setItem('daily_target', target.toString())
+  }
+
+  const pkgs = ticketPackages.length > 0 ? ticketPackages : DEFAULT_TICKET_PACKAGES
+  const groups = packageGroups.length > 0 ? packageGroups : DEFAULT_PACKAGE_GROUPS
+
+  const findMatchedPackage = (s: any) => {
+    return pkgs.find((p: any) => {
+      if (p.variant === 'EVENT') {
+        const group = groups.find((g: any) => g.id === p.groupId)
+        const groupName = group ? group.name : 'Event'
+        const expectedName = `${groupName} - ${p.name}`
+        return s.nama_barang === expectedName
+      }
+      return s.nama_barang === p.name
+    })
+  }
+
+  const getResolvedPrice = (s: any) => {
+    if (s.type === 'OUT') return s.total_harga
+
+    const matchedPkg = findMatchedPackage(s)
+    if (matchedPkg && customNominals[matchedPkg.id] !== undefined) {
+      return customNominals[matchedPkg.id] * s.qty
+    }
+    return getReportedTotal(s)
+  }
+
+  const buildPackageDetailLabel = (
+    categoryLabel: 'Reguler' | 'Pelajar',
+    s: any,
+    priceLabel: string | number,
+  ) => {
+    const rawName = (s.nama_barang || '').trim()
+    const cleanName = rawName.replace(/^paket\s+/i, '').trim()
+
+    if (!cleanName || cleanName.toLowerCase() === categoryLabel.toLowerCase()) {
+      return `${categoryLabel} (${priceLabel})`
+    }
+
+    const matchedPkg = findMatchedPackage(s)
+    const features: string[] = Array.isArray(matchedPkg?.features)
+      ? matchedPkg.features.filter(Boolean)
+      : []
+
+    if (features.length > 1) {
+      return `${categoryLabel} ${cleanName} Include ${formatFeatureList(features)} (${priceLabel})`
+    }
+
+    return `${categoryLabel} ${cleanName} (${priceLabel})`
+  }
+
+  // Today Only & Filtered by Excluded Packages
+  const dashboardDocs = sales.filter((s) => {
+    if (s.is_deleted) return false
+    const d = new Date(s.tanggal)
+    const now = new Date()
+    if (d.toDateString() !== now.toDateString()) return false
+
+    if (s.type === 'OUT') return true
+    if (excludedPackages.length === 0) return true
+
+    const matchedPkg = findMatchedPackage(s)
+    if (matchedPkg) {
+      return !excludedPackages.includes(matchedPkg.id)
+    }
+    return true
+  })
+
+  const txCount = dashboardDocs.length
+
+  let incomeReguler = 0
+  let incomePelajar = 0
+  let incomeEvent = 0
+  let incomeVoucher = 0
+  let paxReguler = 0
+  let paxPelajar = 0
+  let paxEvent = 0
+  let paxVoucher = 0
+
+  let incomePaketan = 0
+  const paketanBreakdown: Record<string, { qty: number; total: number }> = {}
+  const pelajarBreakdown: Record<string, { qty: number; total: number }> = {}
+  const regulerBreakdown: Record<string, { qty: number; total: number }> = {}
+  const voucherBreakdown: Record<string, { qty: number; total: number }> = {}
+  const eventBreakdown: Record<string, { qty: number; total: number }> = {}
+
+  dashboardDocs.forEach((s) => {
+    if (s.type === 'OUT') return
+
+    const val = getResolvedPrice(s)
+    const variant = (s.variant || s.notes || '').toUpperCase()
+
+    if (variant.includes('OUTING') || variant.includes('PAKETAN')) {
+      incomePaketan += val
+      const custName = s.customer_name || 'Umum'
+      if (!paketanBreakdown[custName]) {
+        paketanBreakdown[custName] = { qty: 0, total: 0 }
+      }
+      paketanBreakdown[custName].qty += s.qty
+      paketanBreakdown[custName].total += val
+    } else if (variant.includes('PELAJAR')) {
+      incomePelajar += val
+      paxPelajar += s.qty
+      const pricePerPax = s.qty > 0 ? Math.round(val / s.qty) : val
+      const label =
+        pricePerPax >= 1000
+          ? `${Math.round(pricePerPax / 1000)}rb`
+          : pricePerPax
+      const key = buildPackageDetailLabel('Pelajar', s, label)
+      if (!pelajarBreakdown[key]) {
+        pelajarBreakdown[key] = { qty: 0, total: 0 }
+      }
+      pelajarBreakdown[key].qty += s.qty
+      pelajarBreakdown[key].total += val
+    } else if (variant.includes('EVENT')) {
+      incomeEvent += val
+      paxEvent += s.qty
+      const eventName = s.nama_barang || 'Event Lainnya'
+      if (!eventBreakdown[eventName]) {
+        eventBreakdown[eventName] = { qty: 0, total: 0 }
+      }
+      eventBreakdown[eventName].qty += s.qty
+      eventBreakdown[eventName].total += val
+    } else if (variant.includes('VOUCHER')) {
+      incomeVoucher += val
+      paxVoucher += s.qty
+      const voucherName = s.nama_barang || 'Voucher'
+      if (!voucherBreakdown[voucherName]) {
+        voucherBreakdown[voucherName] = { qty: 0, total: 0 }
+      }
+      voucherBreakdown[voucherName].qty += s.qty
+      voucherBreakdown[voucherName].total += val
+    } else {
+      incomeReguler += val
+      paxReguler += s.qty
+      const pricePerPax = s.qty > 0 ? Math.round(val / s.qty) : val
+      const label =
+        pricePerPax >= 1000
+          ? `${Math.round(pricePerPax / 1000)}rb`
+          : pricePerPax
+      const key = buildPackageDetailLabel('Reguler', s, label)
+      if (!regulerBreakdown[key]) {
+        regulerBreakdown[key] = { qty: 0, total: 0 }
+      }
+      regulerBreakdown[key].qty += s.qty
+      regulerBreakdown[key].total += val
+    }
+  })
+
+  const generalIncome =
+    incomeReguler + incomePelajar + incomePaketan + incomeEvent + incomeVoucher
+
+  const generalExpense = dashboardDocs.reduce((acc, s) => {
+    return s.type === 'OUT' ? acc + s.total_harga : acc
+  }, 0)
+
+  const generalNet = generalIncome - generalExpense
+
+  const qrisSales = dashboardDocs.filter(
+    (s) => s.metode_pembayaran === 'QRIS' && s.type !== 'OUT',
+  )
+  const cashSales = dashboardDocs.filter(
+    (s) => s.metode_pembayaran === 'CASH' && s.type !== 'OUT',
+  )
+
+  const qrisCount = qrisSales.length
+  const cashCount = cashSales.length
+
+  const websiteSales = dashboardDocs.filter(
+    (s) => s.metode_pembayaran === 'Website' && s.type !== 'OUT',
+  )
+  const websiteCount = websiteSales.length
+  const websiteTotal = websiteSales.reduce(
+    (acc, c) => acc + getResolvedPrice(c),
+    0,
+  )
+  const websiteQty = websiteSales.reduce((acc, c) => acc + c.qty, 0)
+
+  const qrisTotal = qrisSales.reduce((acc, c) => acc + getResolvedPrice(c), 0)
+  const qrisQty = qrisSales.reduce((acc, c) => acc + c.qty, 0)
+
+  const cashTotal = cashSales.reduce((acc, c) => acc + getResolvedPrice(c), 0)
+  const cashQty = cashSales.reduce((acc, c) => acc + c.qty, 0)
+
+  const getBreakdownByMethod = (method: string): BreakdownData => {
+    let reg = 0
+    let plj = 0
+    let pkt = 0
+    let evt = 0
+    let vch = 0
+    let regPax = 0
+    let pljPax = 0
+    let pktPax = 0
+    let evtPax = 0
+    let vchPax = 0
+    const regulerDetails: Record<string, { qty: number; total: number }> = {}
+    const pelajarDetails: Record<string, { qty: number; total: number }> = {}
+    const outingDetails: Record<string, { qty: number; total: number }> = {}
+    const eventDetails: Record<string, { qty: number; total: number }> = {}
+    const voucherDetails: Record<string, { qty: number; total: number }> = {}
+
+    dashboardDocs.forEach((s) => {
+      if (s.metode_pembayaran !== method || s.type === 'OUT') return
+
+      const val = getResolvedPrice(s)
+      const variant = (s.variant || s.notes || '').toUpperCase()
+
+      if (variant.includes('OUTING') || variant.includes('PAKETAN')) {
+        pkt += val
+        pktPax += s.qty
+        const custName = s.customer_name || 'Umum'
+        if (!outingDetails[custName]) {
+          outingDetails[custName] = { qty: 0, total: 0 }
+        }
+        outingDetails[custName].qty += s.qty
+        outingDetails[custName].total += val
+      } else if (variant.includes('PELAJAR')) {
+        plj += val
+        pljPax += s.qty
+        const pricePerPax = s.qty > 0 ? Math.round(val / s.qty) : val
+        const label =
+          pricePerPax >= 1000
+            ? `${Math.round(pricePerPax / 1000)}rb`
+            : pricePerPax
+        const key = buildPackageDetailLabel('Pelajar', s, label)
+        if (!pelajarDetails[key]) {
+          pelajarDetails[key] = { qty: 0, total: 0 }
+        }
+        pelajarDetails[key].qty += s.qty
+        pelajarDetails[key].total += val
+      } else if (variant.includes('EVENT')) {
+        evt += val
+        evtPax += s.qty
+        let eventName = s.nama_barang || 'Event Lainnya'
+        if (eventName.includes(' - ')) {
+          eventName = eventName.split(' - ').slice(1).join(' - ')
+        }
+        if (!eventDetails[eventName]) {
+          eventDetails[eventName] = { qty: 0, total: 0 }
+        }
+        eventDetails[eventName].qty += s.qty
+        eventDetails[eventName].total += val
+      } else if (variant.includes('VOUCHER')) {
+        vch += val
+        vchPax += s.qty
+        const voucherName = s.nama_barang || 'Voucher'
+        if (!voucherDetails[voucherName]) {
+          voucherDetails[voucherName] = { qty: 0, total: 0 }
+        }
+        voucherDetails[voucherName].qty += s.qty
+        voucherDetails[voucherName].total += val
+      } else {
+        reg += val
+        regPax += s.qty
+        const pricePerPax = s.qty > 0 ? Math.round(val / s.qty) : val
+        const label =
+          pricePerPax >= 1000
+            ? `${Math.round(pricePerPax / 1000)}rb`
+            : pricePerPax
+        const key = buildPackageDetailLabel('Reguler', s, label)
+        if (!regulerDetails[key]) {
+          regulerDetails[key] = { qty: 0, total: 0 }
+        }
+        regulerDetails[key].qty += s.qty
+        regulerDetails[key].total += val
+      }
+    })
+
+    return {
+      reg,
+      plj,
+      pkt,
+      evt,
+      vch,
+      regPax,
+      pljPax,
+      pktPax,
+      evtPax,
+      vchPax,
+      outingDetails,
+      eventDetails,
+      pelajarDetails,
+      regulerDetails,
+      voucherDetails,
+    }
+  }
+
+  const qrisBreakdown = getBreakdownByMethod('QRIS')
+  const cashBreakdown = getBreakdownByMethod('CASH')
+  const websiteBreakdown = getBreakdownByMethod('Website')
+
+  return {
+    dashboardDocs,
+    txCount,
+    incomeReguler,
+    incomePelajar,
+    incomeEvent,
+    incomeVoucher,
+    incomePaketan,
+    paxReguler,
+    paxPelajar,
+    paxEvent,
+    paxVoucher,
+    paketanBreakdown,
+    pelajarBreakdown,
+    regulerBreakdown,
+    voucherBreakdown,
+    eventBreakdown,
+    generalIncome,
+    generalExpense,
+    generalNet,
+    dailyTarget,
+    updateDailyTarget,
+    qrisTotal,
+    qrisQty,
+    qrisCount,
+    cashTotal,
+    cashQty,
+    cashCount,
+    websiteTotal,
+    websiteQty,
+    websiteCount,
+    qrisBreakdown,
+    cashBreakdown,
+    websiteBreakdown,
+  }
 }
-
-// ============================================
-// LOCATION / VENUE
-// ============================================
-
-export const LOCATION = {
-  name: 'Gedung Ruarasa',
-  address:
-    'Jl. Jend. Sudirman, Rembiga, Kec. Selaparang, Kota Mataram, Nusa Tenggara Bar. 83239',
-  coordinates: {
-    lat: -8.565619195254767,
-    lng: 116.1234396896124,
-  },
-  mapsEmbedUrl:
-    'https://www.google.com/maps/embed?pb=!1m14!1m8!1m3!1d986.3286159519521!2d116.1231071!3d-8.5657306!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x2dcdc100006dc403%3A0xe1e6a09d19ccb55f!2sGedung%20Ruarasa!5e0!3m2!1sen!2sid!4v1770526685132!5m2!1sen!2sid',
-  mapsUrl: 'https://maps.app.goo.gl/8V4DjspFdJQNoquz9',
-  operatingHours: 'Selasa - Jumat: 09:00 - 17:00 WITA, Sabtu - Minggu: 09:00 - 19:00 WITA,Senin: Libur',
-  email: 'ruarasaimmersive@gmail.com',
-  whatsapp: ['087835297789'],
-}
-
-// ============================================
-// FAQ DATA
-// ============================================
-
-export const FAQ_DATA = [
-  {
-    question: 'Apa itu Rua Rasa Immersive Edupark?',
-    answer:
-      'Rua Rasa adalah destinasi wisata edukasi dan hiburan pertama di Lombok! Di sini, kamu bisa menikmati pengalaman imersif yang menggabungkan seni cahaya, teknologi proyeksi interaktif, dan cerita sejarah budaya Sasak. Seru banget!',
-  },
-  {
-    question: 'Berapa harga tiket masuknya?',
-    answer:
-      'Saat ini kami menyediakan beberapa pilihan tiket: Tiket Immersive seharga Rp 35.000 (akses area imersif), Tiket Bundling Nirwana seharga Rp 40.000 (akses Immersive + Tiket Berenang Nirwana Waterpark), Tiket Bundling Ruarasa seharga Rp 45.000 (Immersive + Kid Zone + Photobooth), dan Tiket All In seharga Rp 55.000 (paket lengkap semua wahana).',
-  },
-  {
-    question: 'Apakah anak-anak perlu bayar tiket?',
-    answer:
-      'Untuk area Immersive, anak di bawah 3 tahun GRATIS! Untuk Kid Zone, semua anak perlu membeli tiket agar bisa bermain.',
-  },
-
-  {
-    question: 'Apakah tempat ini ramah untuk anak-anak?',
-    answer:
-      'Pastinya! Kami punya Kid Zone khusus dengan permainan edukatif yang aman dan seru. Area Immersive juga cocok untuk semua usia, dari balita sampai dewasa bisa menikmati!',
-  },
-  {
-    question: 'Berapa lama waktu yang dibutuhkan untuk berkeliling?',
-    answer:
-      'Biasanya pengunjung menghabiskan sekitar 60-90 menit untuk menikmati semua wahana, foto-foto, dan santai sambil ngopi. Tapi boleh kok lebih lama!',
-  },
-  {
-    question: 'Kalau sudah beli tiket, bisa di-refund tidak?',
-    answer:
-      'Maaf ya, tiket yang sudah dibeli tidak bisa di-refund. Tapi tenang, kamu bisa reschedule ke tanggal lain selama bukan tiket event khusus. Hubungi admin kami untuk bantuan!',
-  },
-  {
-    question: 'Apakah tersedia parkir di lokasi?',
-    answer:
-      'Tentu! Kami menyediakan area parkir yang luas untuk motor, mobil, dan bus. Jadi nggak perlu khawatir soal parkir ya!',
-  },
-  {
-    question: 'Boleh bawa makanan atau minuman dari luar?',
-    answer:
-      'Demi kenyamanan dan kebersihan bersama, makanan dan minuman dari luar tidak diperbolehkan ya. Tapi tenang, kami punya Coffee Shop dengan berbagai pilihan makanan dan minuman enak yang bisa kamu nikmati!',
-  },
-  {
-    question: 'Apakah ada tempat ibadah untuk Muslim?',
-    answer:
-      'Ada dong! Kami menyediakan mushola di area belakang yang merupakan replika Masjid Kuno Bayan Beleq. Jadi kamu tetap bisa beribadah dengan nyaman sambil menikmati nuansa sejarah.',
-  },
-  {
-    question: 'Apakah tersedia toilet di lokasi?',
-    answer:
-      'Pasti ada dong! Kami menyediakan toilet di 3 lokasi: 2 di Pos Satpam, 2 di area Kafe, dan 2 lagi di area belakang samping Musholla. Bersih dan nyaman pastinya!',
-  },
-]
-
-// ============================================
-// TICKET INFO (Landing Page - Pricing Section)
-// ============================================
-
-// --- Versi Normal (tanpa event) ---
-export const TICKET_INFO_DEFAULT = {
-  label: 'TIKET MASUK',
-  price: 50,
-  priceUnit: 'rb',
-  badge: '✨ Termasuk Voucher',
-  voucherDescription: 'Dapatkan Voucher Senilai',
-  voucherAmount: '15 Ribu/Pax',
-  voucherSuffix: 'yang bisa ditukarkan untuk menikmati:',
-  voucherPerks: [
-    { icon: '☕', label: 'Coffee Shop (F&B)' },
-    { icon: '🛝', label: 'Kid Zone (Playground)' },
-    { icon: '📸', label: 'Photo Booth' },
-  ],
-  ctaLabel: 'Pesan Tiket',
-  ctaHref: '/ticket',
-}
-
-export const TICKET_INFO_EVENT = [
-  {
-    label: 'TIKET IMMERSIVE',
-    price: 35,
-    priceUnit: 'rb',
-    badge: '',
-    voucherDescription: 'Sudah termasuk akses wahana:',
-    voucherAmount: '',
-    voucherSuffix: '',
-    voucherPerks: [{ icon: '✨', label: 'Akses Immersive' }],
-    ctaLabel: 'Pesan Tiket Sekarang →',
-    ctaHref: '/ticket',
-  },
-  {
-    label: 'BUNDLING NIRWANA',
-    price: 40,
-    priceUnit: 'rb',
-    badge: '🏊 Berenang',
-    voucherDescription: 'Sudah termasuk paket wahana:',
-    voucherAmount: '',
-    voucherSuffix: '',
-    voucherPerks: [
-      { icon: '✨', label: 'Akses Immersive' },
-      { icon: '🏊', label: 'Voucher Berenang Nirwana Waterpark' },
-    ],
-    ctaLabel: 'Pesan Tiket Sekarang →',
-    ctaHref: '/ticket',
-  },
-  {
-    label: 'BUNDLING RUARASA',
-    price: 45,
-    priceUnit: 'rb',
-    badge: '🎈 Kid Zone + Photobooth',
-    voucherDescription: 'Sudah termasuk paket wahana:',
-    voucherAmount: '',
-    voucherSuffix: '',
-    voucherPerks: [
-      { icon: '✨', label: 'Akses Immersive' },
-      { icon: '📸', label: 'Photobooth' },
-      { icon: '🎈', label: 'Kid Zone' },
-    ],
-    ctaLabel: 'Pesan Tiket Sekarang →',
-    ctaHref: '/ticket',
-  },
-  {
-    label: 'TIKET ALL IN',
-    price: 55,
-    priceUnit: 'rb',
-    badge: '🔥 Paket Complete',
-    voucherDescription: 'Sudah termasuk paket lengkap:',
-    voucherAmount: '',
-    voucherSuffix: '',
-    voucherPerks: [
-      { icon: '✨', label: 'Akses Immersive' },
-      { icon: '📸', label: 'Photobooth' },
-      { icon: '🎈', label: 'Kid Zone' },
-      { icon: '🏊', label: 'Voucher Berenang Nirwana Waterpark' },
-    ],
-    ctaLabel: 'Pesan Tiket Sekarang →',
-    ctaHref: '/ticket',
-  },
-
-]
-
-// ============================================
-// 🔀 AKTIF SEKARANG — ganti di sini saat event mulai/berakhir
-// ============================================
-export const TICKET_INFO = TICKET_INFO_EVENT
-
-export const VALENTINE_FAQ_DATA = [
-  FAQ_DATA[0], // Apa itu
-  {
-    question: 'Apakah tiket Valentine bisa di-refund atau diganti paketnya?',
-    answer:
-      'Mohon maaf, tiket event Valentine tidak bisa di-refund. Kamu bisa upgrade ke paket yang lebih mahal (cukup bayar selisihnya), namun tidak bisa downgrade ke paket yang lebih murah. Hubungi admin kami untuk bantuan upgrade!',
-  },
-  FAQ_DATA[5], // Refund
-  FAQ_DATA[6], // Parkir
-  FAQ_DATA[7], // Makanan
-]
-
-// ============================================
-// DYNAMIC TICKET PACKAGES (DEFAULT STATE)
-// ============================================
-
-export const DEFAULT_PACKAGE_GROUPS: any[] = [
-  { id: 'g_reguler', name: 'Reguler', defaultVariant: 'REGULER' },
-  { id: 'g_outing', name: 'Outing', defaultVariant: 'OUTING' },
-  { id: 'g_voucher', name: 'Voucher', defaultVariant: 'VOUCHER' },
-
-]
-
-export const DEFAULT_TICKET_PACKAGES: any[] = [
-  {
-    id: 'p_reg_35',
-    groupId: 'g_reguler',
-    name: 'Paket Immersive',
-    variant: 'REGULER',
-    nominal: 35000,
-    displayNominal: 35000,
-    rules: [],
-    features: ['Immersive'],
-  },
-  {
-    id: 'p_reg_40',
-    groupId: 'g_reguler',
-    name: 'Paket Bundling Nirwana',
-    variant: 'REGULER',
-    nominal: 40000,
-    displayNominal: 40000,
-    rules: [],
-    features: ['Immersive', 'Nirwana Waterpark'],
-  },
-  {
-    id: 'p_reg_45',
-    groupId: 'g_reguler',
-    name: 'Paket Bundling Ruarasa',
-    variant: 'REGULER',
-    nominal: 45000,
-    displayNominal: 45000,
-    rules: [],
-    features: ['Immersive', 'Photobooth', 'Kids Zone'],
-  },
-  {
-    id: 'p_reg_55',
-    groupId: 'g_reguler',
-    name: 'Paket All In',
-    variant: 'REGULER',
-    nominal: 55000,
-    displayNominal: 55000,
-    rules: [],
-    features: ['Immersive', 'Photobooth', 'Kids Zone', 'Nirwana Waterpark'],
-  },
-  {
-    id: 'p_outing_25',
-    groupId: 'g_outing',
-    name: 'Outing',
-    variant: 'OUTING',
-    nominal: 25000,
-    displayNominal: 25000,
-    rules: [],
-    features: ['Immersive'],
-  },
-  {
-    id: 'p_outing_35',
-    groupId: 'g_outing',
-    name: 'Outing',
-    variant: 'OUTING',
-    nominal: 35000,
-    displayNominal: 35000,
-    rules: [],
-    features: ['Immersive'],
-  },
-  {
-    id: 'p_voucher_free',
-    groupId: 'g_voucher',
-    name: 'Gratis Immersive',
-    variant: 'VOUCHER',
-    nominal: 0,
-    displayNominal: 0,
-    rules: [],
-    features: ['Immersive'],
-  },
-  {
-    id: 'p_voucher_50',
-    groupId: 'g_voucher',
-    name: 'Diskon 50%',
-    variant: 'VOUCHER',
-    nominal: 25000,
-    displayNominal: 25000,
-    rules: [],
-    features: ['Immersive'],
-  },
-  {
-    id: 'p_voucher_b1g1',
-    groupId: 'g_voucher',
-    name: 'Beli 1 Gratis 1',
-    variant: 'VOUCHER',
-    nominal: 50000,
-    displayNominal: 50000,
-    rules: [
-      {
-        id: 'r_voucher_b1g1',
-        overrideNominal: 50000,
-        overrideDisplayNominal: 50000,
-        multipleOf: 2,
-        multiplePrice: 50000,
-        multipleDisplayPrice: 50000,
-      },
-    ],
-    features: ['Immersive'],
-  },
-  {
-    id: 'p_voucher_b1g1_50',
-    groupId: 'g_voucher',
-    name: 'B1G1 + Diskon 50%',
-    variant: 'VOUCHER',
-    nominal: 25000,
-    displayNominal: 25000,
-    rules: [
-      {
-        id: 'r_voucher_b1g1_50',
-        overrideNominal: 25000,
-        overrideDisplayNominal: 25000,
-        multipleOf: 2,
-        multiplePrice: 25000,
-        multipleDisplayPrice: 25000,
-      },
-    ],
-    features: ['Immersive'],
-  },
-
-  {
-    id: 'p_event_bundling_immersive',
-    groupId: 'g_event',
-    name: 'Bundling Immersive',
-    variant: 'EVENT',
-    nominal: 35000,
-    displayNominal: 35000,
-    rules: [],
-    features: ['Event', 'Immersive'],
-  },
-]
-
-// ============================================
-// PROMO CAROUSEL DATA
-// ============================================
-
-export const PROMO_CAROUSEL_DATA = [
-  {
-    isActive: true,
-    images: ['/bundling-1.jpeg', '/bundling-2.jpeg'],
-    altText: 'Paket Tiket Bundling Ruarasa',
-    descriptionHtml:
-      '✨ <span class="font-black text-zinc-900">Wahana Lengkap Dalam 1 Tiket!</span> ✨<br/>Nikmati <span class="font-bold text-sky-600">Area Immersive</span>, <span class="font-bold text-sky-600">Kid Zone</span>, <span class="font-bold text-sky-600">Photobooth</span>, & <span class="font-bold text-sky-600">Voucher Berenang</span> Nirwana Waterpark!',
-    ctaText: 'Pesan Tiket Sekarang 🎟️',
-    ctaLink: '#ticket',
-  },
-
-]
